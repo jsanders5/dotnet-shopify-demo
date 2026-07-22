@@ -43,7 +43,7 @@ embedded_app_direct_api_access = true
 # itself for normal operation. read_products: used only during Day 2
 # manual verification, to look up a product variant's inventory_item_id
 # via GraphiQL for end-to-end testing — not needed by the app at runtime.
-scopes = "read_inventory,read_products"
+scopes = "read_inventory,read_products,read_locations"
 
 [auth]
 redirect_urls = [ "https://materials-carpet-fascinating-was.trycloudflare.com/auth/callback" ]

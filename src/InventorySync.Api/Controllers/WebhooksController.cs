@@ -49,6 +49,14 @@ public class WebhooksController : ControllerBase
         // it (Shopify retries non-2xx responses for up to ~48h).
         if (product is null) return Ok();
 
+        // Known, disclosed limitation: Shopify's real inventory_levels/update payload
+        // also carries a location_id, since `available` is the count at ONE location,
+        // not a store-wide total. This demo assumes single-location inventory and
+        // overwrites Quantity directly - for a real multi-location product, a webhook
+        // from one location would clobber another location's contribution instead of
+        // summing them. A correct implementation would track quantity per
+        // (Product, Location) and derive the total via SUM. Not implemented here;
+        // scoped out deliberately rather than silently ignored - see README.
         var previousQuantity = product.Quantity;
         product.Quantity = payload.Available;
 
