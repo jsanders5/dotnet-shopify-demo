@@ -55,15 +55,27 @@
   a running Azure SQL Edge container reachable at `localhost,1433`. Later
   tasks add code inside these projects.
 
-- [ ] **Step 1: Install the .NET 8 SDK**
+- [x] **Step 1: Install the .NET 8 SDK** — done as of commit `725bf06`, via
+  `dotnet-install.sh` rather than brew (see below)
 
+The `dotnet-sdk`/`dotnet-sdk@8` brew casks install via a `.pkg` that
+invokes `sudo`, which needs an interactive terminal — that failed in a
+non-interactive shell. Used Microsoft's official no-admin install script
+instead (also sidesteps the generic cask's version-drift problem, since
+it pins directly to the `8.0` channel):
 ```bash
-brew install --cask dotnet-sdk
+curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+bash dotnet-install.sh --channel 8.0 --install-dir "$HOME/.dotnet"
+echo 'export DOTNET_ROOT="$HOME/.dotnet"' >> ~/.zshrc
+echo 'export PATH="$HOME/.dotnet:$PATH"' >> ~/.zshrc
+export DOTNET_ROOT="$HOME/.dotnet"; export PATH="$HOME/.dotnet:$PATH"
 dotnet --version
 ```
-Expected: prints an `8.x.x` version.
+Result: `8.0.423`. If you have working interactive sudo, `brew install
+--cask dotnet-sdk@8` is a fine alternative — just don't use the plain
+`dotnet-sdk` cask (tracks latest, currently .NET 10).
 
-- [ ] **Step 2: Install Colima + docker CLI + compose plugin**
+- [x] **Step 2: Install Colima + docker CLI + compose plugin**
 
 ```bash
 brew install colima docker docker-compose
@@ -74,7 +86,7 @@ docker compose version
 Expected: `docker compose version` prints a version (confirms the plugin is
 wired up as a Docker CLI plugin, not just the standalone binary).
 
-- [ ] **Step 3: Start Colima (arm64, no Rosetta needed — Azure SQL Edge has a native arm64 image)**
+- [x] **Step 3: Start Colima (arm64, no Rosetta needed — Azure SQL Edge has a native arm64 image)**
 
 ```bash
 colima start --cpu 2 --memory 4 --arch aarch64 --vm-type vz --mount-type virtiofs
@@ -83,7 +95,7 @@ docker ps
 Expected: `docker ps` runs without error (empty list is fine — confirms the
 Docker daemon inside Colima is reachable).
 
-- [ ] **Step 4: Scaffold the solution and both projects**
+- [x] **Step 4: Scaffold the solution and both projects**
 
 ```bash
 dotnet new sln -n InventorySync
@@ -94,25 +106,34 @@ dotnet sln InventorySync.sln add tests/InventorySync.Api.Tests/InventorySync.Api
 dotnet add tests/InventorySync.Api.Tests/InventorySync.Api.Tests.csproj reference src/InventorySync.Api/InventorySync.Api.csproj
 ```
 
-- [ ] **Step 5: Add NuGet packages**
+- [x] **Step 5: Add NuGet packages** — done as of commit `725bf06`, pinned
+  to `8.0.29` (see below)
 
+Pin every package explicitly — an unpinned `dotnet add package` resolves
+to the newest stable release on nuget.org (currently 10.0.10), which
+doesn't support the `net8.0` TFM these projects target and fails restore
+with `NU1202`:
 ```bash
-dotnet add src/InventorySync.Api package Microsoft.EntityFrameworkCore.SqlServer
-dotnet add src/InventorySync.Api package Microsoft.EntityFrameworkCore.Design
-dotnet tool install --global dotnet-ef || dotnet tool update --global dotnet-ef
+dotnet add src/InventorySync.Api package Microsoft.EntityFrameworkCore.SqlServer --version 8.0.29
+dotnet add src/InventorySync.Api package Microsoft.EntityFrameworkCore.Design --version 8.0.29
+dotnet tool install --global dotnet-ef --version 8.0.29 || dotnet tool update --global dotnet-ef --version 8.0.29
 
-dotnet add tests/InventorySync.Api.Tests package Microsoft.EntityFrameworkCore.InMemory
-dotnet add tests/InventorySync.Api.Tests package Microsoft.AspNetCore.Mvc.Testing
+dotnet add tests/InventorySync.Api.Tests package Microsoft.EntityFrameworkCore.InMemory --version 8.0.29
+dotnet add tests/InventorySync.Api.Tests package Microsoft.AspNetCore.Mvc.Testing --version 8.0.29
 ```
+(`dotnet-ef` is a machine-global tool, not pinned per-repo via a
+`dotnet-tools.json` manifest — fine for this demo's scope, but it means a
+fresh clone needs the tool reinstalled rather than restored automatically.)
 
-- [ ] **Step 6: Delete the template's placeholder weather-forecast files**
+- [x] **Step 6: Delete the template's placeholder weather-forecast files**
 
 ```bash
 rm -f src/InventorySync.Api/WeatherForecast.cs
 rm -f src/InventorySync.Api/Controllers/WeatherForecastController.cs
 ```
 
-- [ ] **Step 7: Write `docker-compose.yml`**
+- [x] **Step 7: Write `docker-compose.yml`** — done as of commit `725bf06`,
+  healthcheck uses a TCP probe (see below), not `sqlcmd`
 
 ```yaml
 services:
@@ -127,7 +148,13 @@ services:
     volumes:
       - sql_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q 'SELECT 1' || exit 1"]
+      # This azure-sql-edge image ships neither /opt/mssql-tools nor
+      # /opt/mssql-tools18 (no sqlcmd binary at all, confirmed via dpkg -l
+      # inside the running container), so a sqlcmd-based healthcheck isn't
+      # possible against this image. Falls back to a TCP-connect probe —
+      # coarser (port open, not "accepts a login and query") but the only
+      # option without baked-in SQL client tooling.
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/1433' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -136,7 +163,7 @@ volumes:
   sql_data:
 ```
 
-- [ ] **Step 8: Write `.env.example` and a real (git-ignored) `.env`**
+- [x] **Step 8: Write `.env.example` and a real (git-ignored) `.env`**
 
 `.env.example`:
 ```
@@ -151,7 +178,7 @@ cp .env.example .env
 Edit `.env` and replace the placeholder with a real password meeting Azure
 SQL Edge's complexity rules (8+ chars, upper+lower+digit+symbol).
 
-- [ ] **Step 9: Write `.gitignore`**
+- [x] **Step 9: Write `.gitignore`**
 
 ```
 bin/
@@ -162,7 +189,7 @@ publish/
 .vs/
 ```
 
-- [ ] **Step 10: Start the DB and verify it's healthy**
+- [x] **Step 10: Start the DB and verify it's healthy**
 
 ```bash
 docker compose up -d
@@ -171,7 +198,7 @@ docker compose ps
 Expected: the `db` service shows `healthy` within ~30-60s (Azure SQL Edge
 takes a bit to initialize on first run).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add InventorySync.sln src/InventorySync.Api tests/InventorySync.Api.Tests \
@@ -201,7 +228,7 @@ git commit -m "Scaffold ASP.NET Core Web API + xUnit test project, Azure SQL Edg
   Products` and `DbSet<InventoryLog> InventoryLogs`. Later tasks depend on
   these exact property names and types.
 
-- [ ] **Step 1: Write the failing test for the DbContext**
+- [x] **Step 1: Write the failing test for the DbContext**
 
 `tests/InventorySync.Api.Tests/AppDbContextTests.cs`:
 ```csharp
@@ -238,14 +265,14 @@ public class AppDbContextTests
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter AppDbContextTests
 ```
 Expected: FAIL to compile — `AppDbContext`, `Product` don't exist yet.
 
-- [ ] **Step 3: Write the models**
+- [x] **Step 3: Write the models**
 
 `src/InventorySync.Api/Models/Product.cs`:
 ```csharp
@@ -277,7 +304,7 @@ public class InventoryLog
 }
 ```
 
-- [ ] **Step 4: Write the DbContext**
+- [x] **Step 4: Write the DbContext**
 
 `src/InventorySync.Api/Data/AppDbContext.cs`:
 ```csharp
@@ -302,14 +329,14 @@ public class AppDbContext : DbContext
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter AppDbContextTests
 ```
 Expected: PASS.
 
-- [ ] **Step 6: Wire the DbContext into `Program.cs` and configuration**
+- [x] **Step 6: Wire the DbContext into `Program.cs` and configuration**
 
 `src/InventorySync.Api/Program.cs` (replace the generated file's contents):
 ```csharp
@@ -364,7 +391,7 @@ not put a real password here — this is committed to a public repo):
 }
 ```
 
-- [ ] **Step 7: Set the real local connection string via user-secrets (not committed)**
+- [x] **Step 7: Set the real local connection string via user-secrets (not committed)**
 
 ```bash
 dotnet user-secrets init --project src/InventorySync.Api
@@ -373,7 +400,7 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
   --project src/InventorySync.Api
 ```
 
-- [ ] **Step 8: Create and apply the first migration**
+- [x] **Step 8: Create and apply the first migration**
 
 ```bash
 dotnet ef migrations add InitialCreate --project src/InventorySync.Api
@@ -384,7 +411,7 @@ Expected: migration files appear under
 error (confirms it can reach the Azure SQL Edge container and create the
 `Products`/`InventoryLogs` tables).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/InventorySync.Api tests/InventorySync.Api.Tests
@@ -406,7 +433,7 @@ git commit -m "Add Product/InventoryLog models, AppDbContext, and initial migrat
   swaps `AppDbContext` to EF Core's InMemory provider) — Task 6 reuses this
   same factory for the webhook endpoint tests.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/InventorySync.Api.Tests/InMemoryApiFactory.cs`:
 ```csharp
@@ -437,8 +464,16 @@ public class InMemoryApiFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
             if (descriptor is not null) services.Remove(descriptor);
 
+            // Generate the name once, outside the options lambda: AddDbContext
+            // registers DbContextOptions with scoped lifetime, so a lambda
+            // re-evaluates once per DI scope (once per HTTP request under
+            // WebApplicationFactory). Generating the GUID inside the lambda
+            // gave every request its own empty in-memory database, so a POST
+            // followed by a GET in the same test always 404'd — found and
+            // fixed during Task 3's implementation.
+            var dbName = $"TestDb-{Guid.NewGuid()}";
             services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase($"TestDb-{Guid.NewGuid()}"));
+                options.UseInMemoryDatabase(dbName));
         });
     }
 }
@@ -513,14 +548,14 @@ public class ProductsControllerTests : IClassFixture<InMemoryApiFactory>
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter ProductsControllerTests
 ```
 Expected: FAIL to compile — `ProductsController` doesn't exist yet.
 
-- [ ] **Step 3: Write the controller**
+- [x] **Step 3: Write the controller**
 
 `src/InventorySync.Api/Controllers/ProductsController.cs`:
 ```csharp
@@ -565,14 +600,14 @@ public class ProductsController : ControllerBase
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter ProductsControllerTests
 ```
 Expected: PASS (all three tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/InventorySync.Api/Controllers/ProductsController.cs tests/InventorySync.Api.Tests
@@ -586,19 +621,24 @@ git commit -m "Add Products CRUD endpoints (GET all, GET by id, POST)"
 **Files:**
 - Create: `src/InventorySync.Api/Migrations/*_AddGetLowStockProductsProcedure.cs` (via `dotnet ef migrations add`)
 - Modify: `src/InventorySync.Api/Controllers/ProductsController.cs`
-- Create: `tests/InventorySync.Api.Tests/RealDatabaseApiFactory.cs`
-- Create: `tests/InventorySync.Api.Tests/LowStockReportTests.cs`
 
 **Interfaces:**
 - Consumes: `AppDbContext`, `Product`, `ProductsController` from [[Task 2]]
   and [[Task 3]].
 - Produces: `GET /api/products/low-stock`, backed by the real
-  `dbo.GetLowStockProducts` stored procedure. EF Core's InMemory provider
-  cannot execute `FromSqlRaw`, so this is the one endpoint verified against
-  the real Azure SQL Edge container rather than InMemory — that's an
-  intentional, documented split in the test strategy, not an oversight.
+  `dbo.GetLowStockProducts` stored procedure.
 
-- [ ] **Step 1: Create an empty migration and hand-write the stored procedure SQL**
+**Note on testing this task:** EF Core's InMemory provider cannot execute
+`FromSqlRaw`/raw SQL, so this endpoint cannot be covered by the fast
+InMemory-backed xUnit suite the way Tasks 3 and 6 are. Standing up a
+second `WebApplicationFactory` against a real database just to cover one
+endpoint is disproportionate setup/debugging risk for what it proves (per
+plan review) — instead, this task is verified with a manual `curl` check
+against the running container, documented as a reproducible step in the
+README (Task 8). This is a deliberate, documented gap in automated
+coverage, not an oversight — say so plainly if asked in an interview.
+
+- [x] **Step 1: Create an empty migration and hand-write the stored procedure SQL**
 
 ```bash
 dotnet ef migrations add AddGetLowStockProductsProcedure --project src/InventorySync.Api
@@ -631,111 +671,7 @@ dotnet ef database update --project src/InventorySync.Api
 Expected: completes without error against the running Azure SQL Edge
 container.
 
-- [ ] **Step 2: Write the `RealDatabaseApiFactory` test fixture (no DB yet to test against — write it first per the plan, then use it)**
-
-`tests/InventorySync.Api.Tests/RealDatabaseApiFactory.cs`:
-```csharp
-using InventorySync.Api.Data;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
-namespace InventorySync.Api.Tests;
-
-public class RealDatabaseApiFactory : WebApplicationFactory<Program>
-{
-    public static string ConnectionString =>
-        "Server=localhost,1433;Database=InventorySyncTest;User Id=sa;" +
-        $"Password={Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD")};" +
-        "TrustServerCertificate=True";
-
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        builder.ConfigureServices(services =>
-        {
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-            if (descriptor is not null) services.Remove(descriptor);
-
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(ConnectionString));
-
-            var provider = services.BuildServiceProvider();
-            using var scope = provider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Database.Migrate();
-        });
-    }
-}
-```
-
-Note: this factory requires `MSSQL_SA_PASSWORD` to be set in the shell
-environment and the Azure SQL Edge container from `docker-compose.yml` to
-be running — that's documented in the README (Task 8) as: run
-`export $(grep -v '^#' .env | xargs)` before `dotnet test`.
-
-- [ ] **Step 3: Write the failing test**
-
-`tests/InventorySync.Api.Tests/LowStockReportTests.cs`:
-```csharp
-using System.Net.Http.Json;
-using InventorySync.Api.Data;
-using InventorySync.Api.Models;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit;
-
-namespace InventorySync.Api.Tests;
-
-[CollectionDefinition("RealDatabase", DisableParallelization = true)]
-public class RealDatabaseCollection { }
-
-[Collection("RealDatabase")]
-public class LowStockReportTests : IClassFixture<RealDatabaseApiFactory>
-{
-    private readonly RealDatabaseApiFactory _factory;
-
-    public LowStockReportTests(RealDatabaseApiFactory factory)
-    {
-        _factory = factory;
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.InventoryLogs.RemoveRange(db.InventoryLogs);
-        db.Products.RemoveRange(db.Products);
-        db.SaveChanges();
-    }
-
-    [Fact]
-    public async Task LowStock_ReturnsOnlyProductsAtOrBelowThreshold()
-    {
-        using (var scope = _factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Products.AddRange(
-                new Product { ShopifyInventoryItemId = 1, Title = "Low", Sku = "LOW", Quantity = 2, LowStockThreshold = 5 },
-                new Product { ShopifyInventoryItemId = 2, Title = "High", Sku = "HIGH", Quantity = 50, LowStockThreshold = 5 });
-            db.SaveChanges();
-        }
-
-        var client = _factory.CreateClient();
-        var results = await client.GetFromJsonAsync<List<Product>>("/api/products/low-stock");
-
-        Assert.NotNull(results);
-        Assert.Single(results!);
-        Assert.Equal("LOW", results![0].Sku);
-    }
-}
-```
-
-- [ ] **Step 4: Run the test to verify it fails**
-
-```bash
-export $(grep -v '^#' .env | xargs)
-dotnet test tests/InventorySync.Api.Tests --filter LowStockReportTests
-```
-Expected: FAIL with a 404 (the `low-stock` endpoint doesn't exist yet).
-
-- [ ] **Step 5: Add the endpoint**
+- [x] **Step 2: Add the endpoint**
 
 Add to `src/InventorySync.Api/Controllers/ProductsController.cs` (inside
 the existing `ProductsController` class, alongside the Task 3 methods):
@@ -749,18 +685,31 @@ the existing `ProductsController` class, alongside the Task 3 methods):
     }
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 3: Verify manually against the running container**
 
 ```bash
-dotnet test tests/InventorySync.Api.Tests --filter LowStockReportTests
+dotnet run --project src/InventorySync.Api &
+sleep 3
+curl -s -X POST http://localhost:5072/api/products \
+  -H "Content-Type: application/json" \
+  -d '{"shopifyInventoryItemId":1,"title":"Low","sku":"LOW","quantity":2,"lowStockThreshold":5}'
+curl -s -X POST http://localhost:5072/api/products \
+  -H "Content-Type: application/json" \
+  -d '{"shopifyInventoryItemId":2,"title":"High","sku":"HIGH","quantity":50,"lowStockThreshold":5}'
+curl -s http://localhost:5072/api/products/low-stock
+kill %1
 ```
-Expected: PASS.
+(5072 is this project's configured HTTP port per `launchSettings.json`; adjust if `dotnet run` prints something different.)
+Expected: the final `curl` returns a JSON array containing only the
+`"sku":"LOW"` product. This is the verification step to record verbatim
+in the README (Task 8) as the documented, reproducible way to confirm the
+stored procedure works — since it isn't covered by the automated xUnit
+suite (see this task's testing note above).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
-git add src/InventorySync.Api/Migrations src/InventorySync.Api/Controllers/ProductsController.cs \
-  tests/InventorySync.Api.Tests
+git add src/InventorySync.Api/Migrations src/InventorySync.Api/Controllers/ProductsController.cs
 git commit -m "Add GetLowStockProducts stored procedure and low-stock endpoint via FromSqlRaw"
 ```
 
@@ -778,7 +727,7 @@ git commit -m "Add GetLowStockProducts stored procedure and low-stock endpoint v
   requestBody, string? hmacHeader) : bool`. [[Task 6]] calls this exact
   signature from the webhook controller.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/InventorySync.Api.Tests/ShopifyHmacVerifierTests.cs`:
 ```csharp
@@ -828,14 +777,14 @@ public class ShopifyHmacVerifierTests
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter ShopifyHmacVerifierTests
 ```
 Expected: FAIL to compile — `ShopifyHmacVerifier` doesn't exist yet.
 
-- [ ] **Step 3: Write the verifier**
+- [x] **Step 3: Write the verifier**
 
 `src/InventorySync.Api/Services/ShopifyHmacVerifier.cs`:
 ```csharp
@@ -870,14 +819,14 @@ public static class ShopifyHmacVerifier
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter ShopifyHmacVerifierTests
 ```
 Expected: PASS (all three tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/InventorySync.Api/Services tests/InventorySync.Api.Tests
@@ -904,7 +853,7 @@ git commit -m "Add Shopify HMAC-SHA256 webhook signature verifier"
   `available`), not a simplified made-up schema — deliberate, since the
   point of this project is to demonstrate the real integration pattern.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/InventorySync.Api.Tests/WebhooksControllerTests.cs`:
 ```csharp
@@ -987,14 +936,14 @@ public class WebhooksControllerTests : IClassFixture<InMemoryApiFactory>
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter WebhooksControllerTests
 ```
 Expected: FAIL to compile — `WebhooksController` doesn't exist yet.
 
-- [ ] **Step 3: Write the payload model**
+- [x] **Step 3: Write the payload model**
 
 `src/InventorySync.Api/Models/InventoryUpdatePayload.cs`:
 ```csharp
@@ -1007,7 +956,7 @@ public record InventoryUpdatePayload(
     [property: JsonPropertyName("available")] int Available);
 ```
 
-- [ ] **Step 4: Write the controller**
+- [x] **Step 4: Write the controller**
 
 `src/InventorySync.Api/Controllers/WebhooksController.cs`:
 ```csharp
@@ -1074,21 +1023,21 @@ public class WebhooksController : ControllerBase
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter WebhooksControllerTests
 ```
 Expected: PASS (both tests).
 
-- [ ] **Step 6: Run the full test suite once (InMemory-backed tests only; skip the real-DB ones if the container/env var isn't set up in this shell)**
+- [x] **Step 6: Run the full test suite once (InMemory-backed tests only; skip the real-DB ones if the container/env var isn't set up in this shell)**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter "FullyQualifiedName!~LowStockReportTests"
 ```
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/InventorySync.Api/Models/InventoryUpdatePayload.cs \
@@ -1110,7 +1059,7 @@ git commit -m "Add Shopify inventory-update webhook receiver with HMAC verificat
   configuration is present and correct — not evidence of an actual IIS
   deployment, which this plan does not attempt (per `CLAUDE.md`).
 
-- [ ] **Step 1: Make the in-process hosting model explicit in the csproj**
+- [x] **Step 1: Make the in-process hosting model explicit in the csproj**
 
 Add this property inside the existing `<PropertyGroup>` in
 `src/InventorySync.Api/InventorySync.Api.csproj` (alongside `TargetFramework`,
@@ -1119,7 +1068,7 @@ Add this property inside the existing `<PropertyGroup>` in
 <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
 ```
 
-- [ ] **Step 2: Publish and inspect the generated web.config**
+- [x] **Step 2: Publish and inspect the generated web.config**
 
 ```bash
 dotnet publish src/InventorySync.Api -c Release -o publish
@@ -1131,12 +1080,12 @@ Expected: `web.config` exists and contains
 artifact that proves the app is IIS-deployable; it was not actually run
 under IIS on this machine (there's no IIS on macOS to run it under).
 
-- [ ] **Step 3: Add `publish/` to `.gitignore` if not already covered**
+- [x] **Step 3: Add `publish/` to `.gitignore` if not already covered**
 
 Confirm `.gitignore` (from Task 1) already excludes it — it does
 (`publish/` is already listed). No change needed if so.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/InventorySync.Api/InventorySync.Api.csproj
@@ -1212,13 +1161,25 @@ dotnet run --project src/InventorySync.Api
 ## Running tests
 
 ```bash
-# Fast tests (EF Core InMemory, no DB needed):
-dotnet test tests/InventorySync.Api.Tests --filter "FullyQualifiedName!~LowStockReportTests"
-
-# Full suite, including the stored-procedure test (needs the container running):
-export $(grep -v '^#' .env | xargs)
 dotnet test tests/InventorySync.Api.Tests
 ```
+All of these run against EF Core's InMemory provider — no container
+needed. The one thing they don't cover is the `GetLowStockProducts`
+stored procedure itself (InMemory can't execute `FromSqlRaw`); see below.
+
+## Verifying the low-stock stored procedure (manual — not covered by xUnit)
+
+With the container running and migrations applied:
+```bash
+dotnet run --project src/InventorySync.Api &
+curl -s -X POST http://localhost:5072/api/products -H "Content-Type: application/json" \
+  -d '{"shopifyInventoryItemId":1,"title":"Low","sku":"LOW","quantity":2,"lowStockThreshold":5}'
+curl -s -X POST http://localhost:5072/api/products -H "Content-Type: application/json" \
+  -d '{"shopifyInventoryItemId":2,"title":"High","sku":"HIGH","quantity":50,"lowStockThreshold":5}'
+curl -s http://localhost:5072/api/products/low-stock
+kill %1
+```
+Expected: the last call returns only the `"sku":"LOW"` product.
 ```
 
 - [ ] **Step 2: Check off the completed Day 1 items in `PLAN.md`**
