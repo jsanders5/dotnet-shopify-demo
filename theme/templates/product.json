@@ -38,6 +38,10 @@
           "type": "price",
           "settings": {}
         },
+        "low_stock_alert": {
+          "type": "low_stock_alert",
+          "settings": {}
+        },
         "buy_buttons": {
           "type": "buy_buttons",
           "settings": {
@@ -63,6 +67,7 @@
         "variant_picker",
         "quantity_selector",
         "price",
+        "low_stock_alert",
         "buy_buttons",
         "description",
         "share"
@@ -98,15 +103,10 @@
         "padding_top": 48,
         "padding_bottom": 28
       }
-    },
-    "low-stock-alert": {
-      "type": "low-stock-alert",
-      "settings": {}
     }
   },
   "order": [
     "main",
-    "low-stock-alert",
     "related-products"
   ]
 }

@@ -115,6 +115,8 @@
                   {% render 'selling-plans' %}
                 {%- endform -%}
               </div>
+            {%- when 'low_stock_alert' -%}
+              {%- render 'low-stock-alert' -%}
             {%- when 'inventory' -%}
               <p
                 class="product__inventory no-js-hidden{% if block.settings.text_style == 'uppercase' %} caption-with-letter-spacing{% elsif block.settings.text_style == 'subtitle' %} subtitle{% endif %}{% if product.selected_or_first_available_variant.inventory_management != 'shopify' %} visibility-hidden{% endif %}"
@@ -580,6 +582,10 @@
   "blocks": [
     {
       "type": "@app"
+    },
+    {
+      "type": "low_stock_alert",
+      "name": "Low Stock Alert"
     },
     {
       "type": "text",

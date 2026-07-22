@@ -1,0 +1,42 @@
+{% comment %}
+  Rendered as a block inside sections/main-product.liquid (see the
+  `low_stock_alert` case there), positioned via block_order so it sits
+  right after price - a "more user friendly location" than the original
+  standalone section this replaced, which rendered at the bottom of the
+  whole page.
+
+  Visually matches this theme's own native "Inventory" block (same
+  dot-icon SVG + amber rgb(238,148,65) it already uses for its own
+  low-stock state, main-product.liquid ~line 127) so this reads as part
+  of the theme's own design language. The difference: that native block
+  reflects Shopify's own inventory_quantity: this one is driven by the
+  .NET backend via the App Proxy (GET /apps/inventory/products/by-variant/{id}),
+  which is the actual point of this demo - showing a custom inventory
+  pipeline, not Shopify's built-in one.
+{% endcomment %}
+{%- assign variant = product.selected_or_first_available_variant -%}
+{%- comment -%}
+  .product__inventory sets `display: flex` unconditionally (see
+  section-main-product.css), which overrides the `hidden` attribute's
+  default `display: none` regardless of selector specificity - author
+  CSS always wins over the browser's UA stylesheet. So visibility here
+  is driven by the inline `display:none` starting style below, toggled
+  via el.style.display in JS, not by the `hidden` attribute (kept only
+  for its semantic/accessibility value, not for actually hiding this).
+{%- endcomment -%}
+<p
+  class="product__inventory low-stock-alert"
+  data-low-stock-alert
+  data-variant-id="{{ variant.id }}"
+  role="status"
+  hidden
+  style="display: none;"
+>
+  <svg width="15" height="15" aria-hidden="true">
+    <circle cx="7.5" cy="7.5" r="7.5" fill="rgb(238,148,65,0.3)" />
+    <circle cx="7.5" cy="7.5" r="5" stroke="rgb(255,255,255)" stroke-width="1" fill="rgb(238,148,65)" />
+  </svg>
+  Low stock — order soon!
+</p>
+
+{{ 'low-stock-alert.js' | asset_url | script_tag }}

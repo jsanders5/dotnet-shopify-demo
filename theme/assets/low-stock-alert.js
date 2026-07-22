@@ -1,21 +1,30 @@
+// This theme's own CSS sets `display: flex` unconditionally on
+// .product__inventory (the class this badge reuses for visual
+// consistency), which overrides the `hidden` attribute regardless of
+// selector specificity. Toggling el.style.display directly wins over
+// that, since inline styles always beat stylesheet rules.
+function setVisible(el, visible) {
+  el.style.display = visible ? '' : 'none';
+}
+
 async function checkLowStock(el, variantId) {
   if (!variantId) {
-    el.hidden = true;
+    setVisible(el, false);
     return;
   }
 
   try {
     const response = await fetch(`/apps/inventory/products/by-variant/${variantId}`);
     if (!response.ok) {
-      el.hidden = true;
+      setVisible(el, false);
       return;
     }
 
     const data = await response.json();
-    el.hidden = !data.isLowStock;
+    setVisible(el, data.isLowStock);
   } catch (error) {
     console.error('Low stock alert check failed:', error);
-    el.hidden = true;
+    setVisible(el, false);
   }
 }
 
