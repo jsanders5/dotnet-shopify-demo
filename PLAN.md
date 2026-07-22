@@ -36,17 +36,19 @@ boxes.
 
 ## Day 1 — .NET backend
 
-- [ ] Scaffold ASP.NET Core Web API project (controllers, DI)
-- [ ] Stand up SQL Server (Docker container or LocalDB)
-- [ ] Define EF Core models (Product, InventoryLog, maybe SyncEvent), run
-      first migration
-- [ ] Build CRUD endpoints (GET/POST products, low-stock report)
-- [ ] Add one stored procedure (e.g. `GetLowStockProducts`) called via
+- [x] Scaffold ASP.NET Core Web API project (controllers, DI)
+- [x] Stand up a SQL Server-compatible engine (Azure SQL Edge via Colima —
+      see "What was decided" below; not real SQL Server, not LocalDB)
+- [x] Define EF Core models (`Product`, `InventoryLog`), run first
+      migration
+- [x] Build CRUD endpoints (GET/POST products, low-stock report)
+- [x] Add one stored procedure (`GetLowStockProducts`) called via
       `FromSqlRaw`, to explicitly demonstrate stored-procedure experience
-- [ ] Add a webhook receiver endpoint (`POST /webhooks/inventory-update`)
-      that verifies the Shopify HMAC signature and persists updates to
-      SQL Server
-- [ ] Basic tests
+- [x] Add a webhook receiver endpoint (`POST /webhooks/inventory-update`)
+      that verifies the Shopify HMAC signature and persists updates
+- [x] Basic tests (xUnit, EF Core InMemory provider; the stored procedure
+      itself is verified manually instead — InMemory can't run
+      `FromSqlRaw`, see `README.md`)
 
 ## Day 2 — Shopify half + wiring
 
@@ -76,8 +78,24 @@ to deploy to. Two honest options:
 
 Default to option 2 unless Azure access is confirmed available.
 
-## Open questions before starting implementation
+**Resolved:** No Azure access was confirmed, so option 2 was taken. The
+app runs on Kestrel, is configured with `AspNetCoreHostingModel=InProcess`,
+and `dotnet publish` was confirmed to generate a correct `web.config` —
+but it has never been deployed to or run under a real IIS instance. See
+`README.md` for the full caveat.
 
-- Shopify Partner account: needs signup (free) if not already set up
-- SQL Server: Docker container vs. LocalDB — which is available/preferred?
-- Repo visibility (public, to link from the resume?)
+## What was decided (Day 1 complete)
+
+The items below were open questions before implementation started; here's
+what was actually decided/done, so this file reflects reality rather than
+lingering as unresolved:
+
+- **SQL engine:** Azure SQL Edge (`mcr.microsoft.com/azure-sql-edge`) run
+  via Colima, not a real SQL Server container and not LocalDB — the real
+  Linux SQL Server image has no arm64 build, and this dev machine is
+  Apple Silicon macOS. Wire-compatible T-SQL/EF Core surface, but a
+  different product; see `README.md`'s caveats section.
+- **Shopify Partner account / development store:** not set up yet — this
+  is Day 2 scope, not started.
+- **Repo visibility:** left as the user's call to make when ready to link
+  it from a resume; not decided as part of Day 1 backend work.
