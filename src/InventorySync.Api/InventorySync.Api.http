@@ -1,6 +1,11 @@
 @InventorySync.Api_HostAddress = http://localhost:5072
 
-GET {{InventorySync.Api_HostAddress}}/weatherforecast/
+GET {{InventorySync.Api_HostAddress}}/api/products/
+Accept: application/json
+
+###
+
+GET {{InventorySync.Api_HostAddress}}/api/products/low-stock
 Accept: application/json
 
 ###

@@ -43,7 +43,11 @@ public class WebhooksController : ControllerBase
 
         var product = await _db.Products
             .FirstOrDefaultAsync(p => p.ShopifyInventoryItemId == payload.InventoryItemId);
-        if (product is null) return NotFound();
+        // A real store fires inventory_levels/update for every inventory item, most of
+        // which this demo won't have a Product row for. Acknowledge with 200 rather than
+        // 404 so Shopify doesn't treat an untracked item as a delivery failure and retry
+        // it (Shopify retries non-2xx responses for up to ~48h).
+        if (product is null) return Ok();
 
         var previousQuantity = product.Quantity;
         product.Quantity = payload.Available;
