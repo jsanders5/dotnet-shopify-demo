@@ -40,10 +40,13 @@ embedded_app_direct_api_access = true
 [access_scopes]
 # read_inventory: required by Shopify to back the inventory_levels/update
 # webhook subscription, even though the app never queries the Admin API
-# itself for normal operation. read_products: used only during Phase 2
-# manual verification, to look up a product variant's inventory_item_id
-# via GraphiQL for end-to-end testing — not needed by the app at runtime.
-scopes = "read_inventory,read_products,read_locations"
+# itself for normal operation. read_products/read_locations: used only
+# during manual verification/testing via GraphiQL - not needed by the
+# app at runtime. write_products + read/write_publications: used once
+# via GraphiQL to create and publish 3 demo headphone products (see
+# docs/superpowers/plans) - also setup-only, not a runtime capability
+# of the app itself.
+scopes = "read_inventory,read_products,read_locations,write_products,read_publications,write_publications"
 
 [auth]
 redirect_urls = [ "https://materials-carpet-fascinating-was.trycloudflare.com/auth/callback" ]
