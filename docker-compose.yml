@@ -1,0 +1,23 @@
+services:
+  db:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: inventorysync-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      # Note: this azure-sql-edge image ships neither /opt/mssql-tools nor
+      # /opt/mssql-tools18 (no sqlcmd binary at all), so a sqlcmd-based
+      # healthcheck isn't possible here. Fall back to a TCP-connect check
+      # against the SQL Server port using bash's /dev/tcp.
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/1433' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sql_data:
