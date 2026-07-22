@@ -1,0 +1,27 @@
+{% comment %}
+  Shopify's storefront Liquid does not expose variant.inventory_item_id
+  (confirmed live — it's absent even from the variant's full JSON
+  serialization), so this uses variant.id instead. The .NET backend maps
+  variant.id -> ShopifyInventoryItemId internally; see
+  GET /api/products/by-variant/{variantId}.
+{% endcomment %}
+{% liquid
+  assign variant = product.selected_or_first_available_variant
+%}
+<div
+  class="low-stock-alert"
+  data-low-stock-alert
+  data-variant-id="{{ variant.id }}"
+  hidden
+>
+  <p class="low-stock-alert__text">Low stock — order soon!</p>
+</div>
+
+{{ 'low-stock-alert.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Low Stock Alert",
+  "settings": []
+}
+{% endschema %}
