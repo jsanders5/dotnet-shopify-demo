@@ -1,0 +1,49 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+#
+# This app exists only to hold Shopify platform configuration (App Proxy +
+# webhook subscription) for the skullcandy-dotnet-shopify-demo project. It has
+# no embedded UI, no extensions, and no code of its own — the real backend is
+# the .NET API in this repo's src/InventorySync.Api, reached through the App
+# Proxy below. application_url/redirect_urls are effectively unused (no OAuth
+# flow, no embedded admin page is ever loaded) but point at the dev tunnel so
+# they're at least real, reachable URLs rather than the scaffold's placeholder.
+#
+# NOTE: the tunnel URL below is a Cloudflare Quick Tunnel — it changes every
+# time the tunnel restarts. Whenever that happens, application_url, the
+# app_proxy url, and the webhook subscription uri below all need updating to
+# match, then `npm run deploy` re-run.
+
+client_id = "ca533f6c54e4edb2a01a8820fc0cf43b"
+name = "inventory-sync-proxy"
+application_url = "https://materials-carpet-fascinating-was.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  topics = ["inventory_levels/update"]
+  uri = "https://materials-carpet-fascinating-was.trycloudflare.com/webhooks/inventory-update"
+
+[app_proxy]
+url = "https://materials-carpet-fascinating-was.trycloudflare.com/api"
+subpath = "inventory"
+prefix = "apps"
+
+[access.admin]
+direct_api_mode = "online"
+embedded_app_direct_api_access = true
+
+[access_scopes]
+# read_inventory: required by Shopify to back the inventory_levels/update
+# webhook subscription, even though the app never queries the Admin API
+# itself for normal operation. read_products: used only during Day 2
+# manual verification, to look up a product variant's inventory_item_id
+# via GraphiQL for end-to-end testing — not needed by the app at runtime.
+scopes = "read_inventory,read_products"
+
+[auth]
+redirect_urls = [ "https://materials-carpet-fascinating-was.trycloudflare.com/auth/callback" ]

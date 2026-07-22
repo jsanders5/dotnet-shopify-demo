@@ -71,7 +71,7 @@ JS fetch renders the badge.
 This task has no Shopify dependency at all — dispatch it exactly like a
 Day 1 task, independent of everything else in this plan.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/InventorySync.Api.Tests/LowStockStatusEndpointTests.cs`:
 ```csharp
@@ -159,14 +159,14 @@ public class LowStockStatusEndpointTests : IClassFixture<InMemoryApiFactory>
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter LowStockStatusEndpointTests
 ```
 Expected: FAIL to compile — `LowStockStatus` doesn't exist yet.
 
-- [ ] **Step 3: Write the response model**
+- [x] **Step 3: Write the response model**
 
 `src/InventorySync.Api/Models/LowStockStatus.cs`:
 ```csharp
@@ -180,7 +180,7 @@ public record LowStockStatus(
     bool IsLowStock);
 ```
 
-- [ ] **Step 4: Add the endpoint**
+- [x] **Step 4: Add the endpoint**
 
 Add to `src/InventorySync.Api/Controllers/ProductsController.cs` (inside
 the existing `ProductsController` class, alongside the other methods):
@@ -207,21 +207,21 @@ the existing `ProductsController` class, alongside the other methods):
 ```
 (Needs `using InventorySync.Api.Models;` — already present in this file.)
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter LowStockStatusEndpointTests
 ```
 Expected: PASS (all three tests).
 
-- [ ] **Step 6: Run the full suite to confirm no regressions**
+- [x] **Step 6: Run the full suite to confirm no regressions**
 
 ```bash
 dotnet test tests/InventorySync.Api.Tests --filter "FullyQualifiedName!~LowStockReportTests"
 ```
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/InventorySync.Api/Models/LowStockStatus.cs \
@@ -244,14 +244,14 @@ git commit -m "Add by-inventory-item low-stock status endpoint for storefront ba
   tunnel), so Tasks 4/5 will need re-pointing whenever that happens
   during this project.
 
-- [ ] **Step 1: Install cloudflared**
+- [x] **Step 1: Install cloudflared**
 
 ```bash
 brew install cloudflared
 cloudflared --version
 ```
 
-- [ ] **Step 2: Start the API (if not already running)**
+- [x] **Step 2: Start the API (if not already running)**
 
 ```bash
 export DOTNET_ROOT="$HOME/.dotnet"; export PATH="$HOME/.dotnet:$PATH"
@@ -261,7 +261,7 @@ for i in $(seq 1 30); do curl -sf http://localhost:5072/api/products > /dev/null
 curl -s http://localhost:5072/api/products
 ```
 
-- [ ] **Step 3: Start the tunnel and capture the public URL**
+- [x] **Step 3: Start the tunnel and capture the public URL**
 
 ```bash
 nohup cloudflared tunnel --url http://localhost:5072 > /tmp/cloudflared.log 2>&1 &
@@ -270,7 +270,7 @@ grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare\.com' /tmp/cloudflared.log | head 
 ```
 Expected: a `https://<random>.trycloudflare.com` URL printed.
 
-- [ ] **Step 4: Verify the tunnel actually forwards to the API**
+- [x] **Step 4: Verify the tunnel actually forwards to the API**
 
 ```bash
 curl -s https://<the-url-from-step-3>/api/products
@@ -281,7 +281,7 @@ No commit for this task — nothing in the repo changes.
 
 ---
 
-### Task 3 [USER ACTION]: Install Shopify CLI and authenticate
+### Task 3 [x] [USER ACTION]: Install Shopify CLI and authenticate — DONE
 
 **Interfaces:**
 - Produces: an authenticated `shopify` CLI session (its credential
@@ -289,99 +289,162 @@ No commit for this task — nothing in the repo changes.
   (theme pull/push) and usable by the controller afterward via Bash
   without re-prompting for login.
 
-- [ ] **Step 1: Install Shopify CLI**
+- [x] **Step 1: Install Shopify CLI**
 
 ```bash
 npm install -g @shopify/cli @shopify/theme
 shopify version
 ```
 
-- [ ] **Step 2: Authenticate (interactive — run this yourself)**
+- [x] **Step 2: Authenticate (interactive — run this yourself)**
 
-Shopify CLI login opens a browser window for you to approve — this is
-an OAuth-style login tied to your own Shopify Partner account, so it
-needs to be you completing it interactively, not something run
-unattended:
 ```bash
 shopify auth login
 ```
-Follow the browser prompt. Once done, the CLI session persists, and
-subsequent `shopify` commands (including ones run for you later in
-this plan) won't need you to log in again.
 
 ---
 
-### Task 4 [USER ACTION]: Register the custom app and configure the App Proxy
+### Task 4 [x] [Corrected from USER ACTION to mostly CODE]: Register the app and configure the App Proxy — DONE
 
-Requires Task 2's tunnel URL. Do this in the Shopify Partner Dashboard
-(partners.shopify.com), in your Partner organization:
+**As actually done — this task's mechanism differs substantially from
+what was originally written above.** Legacy custom apps (created
+directly from a store's Admin → Settings → Apps → Develop apps) are
+disabled for new creation as of January 1, 2026. The current path is
+Shopify's **Dev Dashboard**, and choosing "Start with Shopify CLI"
+there gives a declarative `shopify.app.toml` config file — version-
+controllable, and mostly executable via Bash once the user's CLI login
+(Task 3) exists, rather than manual dashboard clicking throughout.
 
-- [ ] **Step 1:** Apps → Create app → choose the manual/custom app
-  path (not a CLI-scaffolded template — this app exists only to hold
-  configuration, not to run any code of its own).
-- [ ] **Step 2:** Name it something like "Inventory Sync Proxy" (internal
-  name only, never customer-facing).
-- [ ] **Step 3:** In the app's configuration, find **App proxy** (under
-  "App setup" or "Configuration," depending on current Shopify UI —
-  adapt to whatever's actually there) and set:
-  - Subpath prefix: `apps`
-  - Subpath: `inventory`
-  - Proxy URL: `<tunnel-url-from-task-2>/api`
+- [x] **Step 1 (you, in Dev Dashboard):** Choose "Build and manage apps
+  in your Dev Dashboard" → "Start with Shopify CLI" → gave the app name
+  "inventory-sync-proxy" → dashboard displayed the scaffold command.
 
-  (Reasoning: a storefront request to
-  `/apps/inventory/products/by-inventory-item/{id}` gets the
-  `/apps/inventory` prefix stripped by Shopify and the remainder
-  forwarded to `<Proxy URL><remainder>` — i.e.
-  `<tunnel>/api/products/by-inventory-item/{id}`, which matches Task
-  1's route exactly.)
-- [ ] **Step 4:** Save, then install the app on your development store
-  (Partner Dashboard should offer an install link, or "Select store" →
-  your dev store → install).
-- [ ] **Step 5:** Note the app's **Client secret** (in API
-  credentials/App setup) — this is the value Task 5 needs as the real
-  webhook signing secret. Don't paste it into chat; you'll set it
-  directly via a terminal command in Task 5.
-
----
-
-### Task 5 [USER ACTION + mixed]: Configure the real webhook subscription and set the secret
-
-Requires Task 2's tunnel URL and Task 4's client secret.
-
-- [ ] **Step 1 (you, in Partner Dashboard):** In the same app's
-  configuration, find **Webhooks** and add a subscription:
-  - Topic: `inventory_levels/update`
-  - URL: `<tunnel-url-from-task-2>/webhooks/inventory-update`
-  - API version: current stable (whatever the dashboard defaults to)
-
-- [ ] **Step 2 (you, in your own terminal — keeps the secret out of
-  chat):** Set the real webhook secret via user-secrets, replacing the
-  Day 1 test placeholder:
+- [x] **Step 2 (controller, via Bash):** Ran the scaffold command with
+  flags to skip prompts and avoid a full Node/Remix template:
   ```bash
-  export DOTNET_ROOT="$HOME/.dotnet"; export PATH="$HOME/.dotnet:$PATH"
-  dotnet user-secrets set "Shopify:WebhookSecret" "<the-app's-client-secret>" \
-    --project src/InventorySync.Api
+  npx @shopify/create-app@latest --name "inventory-sync-proxy" \
+    --template none --path shopify-app
+  ```
+  `--template none` uses Shopify's `shopify-app-template-extension-only`
+  template, which — despite the name — still scaffolds a full demo "FAQ"
+  app (embedded admin pages, metaobjects, an MCP "app-tools" extension).
+  All of that is irrelevant to a config-only proxy app and was removed:
+  ```bash
+  rm -rf shopify-app/inventory-sync-proxy/.git   # scaffold inits its own git repo
+  # flatten shopify-app/inventory-sync-proxy/* up to shopify-app/
+  rm -rf shopify-app/extensions shopify-app/shared shopify-app/mcp.json \
+    shopify-app/.graphqlrc.js shopify-app/pnpm-workspace.yaml \
+    shopify-app/vite.config.ts shopify-app/CHANGELOG.md shopify-app/SECURITY.md
+  # also removed the now-pointless "workspaces": ["extensions/*"] from package.json
   ```
 
-- [ ] **Step 3 (restart the API so it picks up the new secret):**
+- [x] **Step 3 (controller, editing `shopify-app/shopify.app.toml`):**
+  Removed the FAQ/metaobject/`[sidekick]` blocks (irrelevant demo
+  content), and added:
+  ```toml
+  [webhooks]
+  api_version = "2026-10"
+
+    [[webhooks.subscriptions]]
+    topics = ["inventory_levels/update"]
+    uri = "https://<tunnel>/webhooks/inventory-update"
+
+  [app_proxy]
+  url = "https://<tunnel>/api"
+  subpath = "inventory"
+  prefix = "apps"          # NOTE: the field is `prefix`, not `subpath_prefix`
+                            # as originally guessed above — deploy fails
+                            # with "[app_proxy.prefix]: Required" otherwise.
+  ```
+  Also pointed `application_url` and `[auth] redirect_urls` at the
+  tunnel (they're otherwise unused — no embedded UI, no OAuth flow ever
+  runs — but left as the scaffold's dead `shopify.dev` placeholder felt
+  worse than a real, reachable URL).
+
+- [x] **Step 4 (controller, via Bash):** `access_scopes` needed
+  `read_inventory` — deploying without it fails with `Missing scope for
+  webhook topic: inventory_levels/update (read_inventory)`. Then deploy
+  non-interactively:
+  ```bash
+  cd shopify-app
+  npx shopify app deploy --allow-updates --message "Configure App Proxy and inventory_levels/update webhook"
+  ```
+
+- [x] **Step 5 (controller, via Bash):** Installed the app on the dev
+  store — `shopify app deploy` registers the config but doesn't install
+  it on a specific store by itself. Ran `shopify app dev` briefly
+  (`--no-update` so it respects the toml's tunnel URL instead of
+  generating its own):
+  ```bash
+  npx shopify app dev --store <dev-store>.myshopify.com --no-update
+  ```
+  Confirmed via its output (`Access scopes auto-granted: read_inventory`,
+  `Using URL: https://<tunnel>/api`) that install + scope grant + proxy
+  URL were all correct, then stopped the process — no need to keep it
+  running (no extensions to serve live).
+
+- [x] **Step 6 (you, in Dev Dashboard):** Client secret retrieved from
+  the app's "Client credentials" section — needed by Task 5.
+
+---
+
+### Task 5 [x] [USER ACTION + mixed]: Configure the real webhook subscription and set the secret — DONE
+
+**Corrected:** the webhook subscription isn't configured separately in
+a dashboard "Webhooks" screen — it's the same `[[webhooks.subscriptions]]`
+block in `shopify.app.toml` from Task 4, deployed together with the App
+Proxy config. Nothing separate to do here on that front.
+
+- [x] **Step 1 (you, in your own terminal — keeps the secret out of
+  chat and shell history):**
+  ```bash
+  read -s "SHOPIFY_WEBHOOK_SECRET?Webhook secret: "; echo
+  export DOTNET_ROOT="$HOME/.dotnet"; export PATH="$HOME/.dotnet:$PATH"
+  dotnet user-secrets set "Shopify:WebhookSecret" "$SHOPIFY_WEBHOOK_SECRET" \
+    --project src/InventorySync.Api
+  unset SHOPIFY_WEBHOOK_SECRET
+  ```
+  (Note: zsh's `read -p` means something different — "read from a
+  coprocess" — not "show a prompt" like bash. Use the `"VAR?prompt"`
+  form shown above instead.)
+
+- [x] **Step 2 (controller, restart the API):**
   ```bash
   lsof -ti:5072 -sTCP:LISTEN | xargs -r kill
   export DOTNET_ROOT="$HOME/.dotnet"; export PATH="$HOME/.dotnet:$PATH"
   nohup dotnet run --project src/InventorySync.Api > /tmp/inventorysync-api.log 2>&1 &
   ```
 
-- [ ] **Step 4 (verify, together):** In the dev store admin, edit a
-  product variant's inventory quantity. Watch `/tmp/inventorysync-api.log`
-  for the incoming webhook request, and confirm via
-  `curl http://localhost:5072/api/products` that the corresponding
-  `Product` row's `Quantity` actually changed. If nothing arrives,
-  double check the webhook URL matches the *current* tunnel URL exactly
-  (quick tunnel URLs change on restart — see Task 2's note) and that
-  the product/variant you edited maps to a `Product` row created via
-  the API (Task 1's data, or new rows POSTed for this test).
+- [x] **Step 3 (verify, together — real end-to-end, not simulated):**
+  Needed a real product/variant to test against. Looked one up via the
+  local GraphiQL proxy that `shopify app dev` exposes (required
+  temporarily adding `read_products` to `access_scopes` — noted in the
+  toml as testing-only, not used by the app at runtime):
+  ```bash
+  curl -s -X POST "http://localhost:3457/graphiql/graphql.json?key=<key>" \
+    -H "Content-Type: application/json" \
+    -d '{"query":"{ products(first: 5) { edges { node { title variants(first: 3) { edges { node { title inventoryItem { id } } } } } } } }"}'
+  ```
+  Used "The Complete Snowboard" / "Ice" variant
+  (`inventory_item_id 56346223968569`, starting quantity 10). Registered
+  it via the API:
+  ```bash
+  curl -s -X POST http://localhost:5072/api/products -H "Content-Type: application/json" \
+    -d '{"shopifyInventoryItemId":56346223968569,"title":"Complete Snowboard - Ice","sku":"SNOWBOARD-ICE","quantity":10,"lowStockThreshold":5}'
+  ```
+  Then the user changed that variant's inventory to 5 in Shopify Admin
+  (Products → Inventory page, or the variant's own page — the exact
+  screen location shifted during testing; either works). Confirmed via
+  the API log and `GET /api/products/by-inventory-item/56346223968569`:
+  the real webhook fired, `InventoryLog` recorded
+  `PreviousQuantity: 10, NewQuantity: 5`, and `isLowStock` flipped to
+  `true`. Full real chain proven: Shopify Admin edit → real webhook →
+  tunnel → HMAC verified with the real secret → SQL Server updated.
 
-No application-code commit for this task (config + a local secret, not
-tracked in git).
+No application-code commit needed for the secret itself (lives only in
+`dotnet user-secrets`, outside the repo) — but `shopify-app/` (the
+`shopify.app.toml` and its supporting files) should be committed, since
+it's config-as-code for this project, not a secret.
 
 ---
 
