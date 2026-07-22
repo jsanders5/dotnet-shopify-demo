@@ -44,4 +44,24 @@ public class ProductsController : ControllerBase
             .FromSqlRaw("EXEC dbo.GetLowStockProducts")
             .ToListAsync();
     }
+
+    [HttpGet("by-inventory-item/{inventoryItemId:long}")]
+    public async Task<ActionResult<LowStockStatus>> GetByInventoryItem(long inventoryItemId)
+    {
+        var product = await _db.Products.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ShopifyInventoryItemId == inventoryItemId);
+
+        if (product is null)
+        {
+            return new LowStockStatus(inventoryItemId, Tracked: false, Quantity: null,
+                LowStockThreshold: null, IsLowStock: false);
+        }
+
+        return new LowStockStatus(
+            inventoryItemId,
+            Tracked: true,
+            Quantity: product.Quantity,
+            LowStockThreshold: product.LowStockThreshold,
+            IsLowStock: product.Quantity <= product.LowStockThreshold);
+    }
 }
