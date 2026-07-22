@@ -34,7 +34,7 @@ boxes.
 - Built with Claude Code/Opus throughout — provable via commit history,
   which itself satisfies the posting's "AI-assisted development tools" line
 
-## Day 1 — .NET backend
+## Phase 1 — .NET backend
 
 - [x] Scaffold ASP.NET Core Web API project (controllers, DI)
 - [x] Stand up a SQL Server-compatible engine (Azure SQL Edge via Colima —
@@ -50,7 +50,7 @@ boxes.
       itself is verified manually instead — InMemory can't run
       `FromSqlRaw`, see `README.md`)
 
-## Day 2 — Shopify half + wiring
+## Phase 2 — Shopify half + wiring
 
 - [x] Free Shopify Partner account + development store (`inventory-sync-demo`
       — default theme turned out to be a Horizon-based theme, not Dawn;
@@ -65,12 +65,12 @@ boxes.
       .NET verifies + updates SQL Server → storefront badge reflects the
       change — confirmed live, in both directions, including switching
       between variants without a page reload
-- [x] Polish: README updated for Day 2; screenshots taken during live
+- [x] Polish: README updated for Phase 2; screenshots taken during live
       verification (not saved as repo assets — see note below)
 - [ ] Draft resume bullets from what was actually built — in progress,
       being handled directly with the user rather than as a repo artifact
 - [ ] Push to GitHub — not yet done, repo visibility still the user's call
-      (see Day 1's note)
+      (see Phase 1's note)
 - [ ] Architecture diagram — not built; the README's prose description
       and the two plan docs stand in for one
 
@@ -99,7 +99,7 @@ and `dotnet publish` was confirmed to generate a correct `web.config` —
 but it has never been deployed to or run under a real IIS instance. See
 `README.md` for the full caveat.
 
-## What was decided (Day 1 complete)
+## What was decided (Phase 1 complete)
 
 The items below were open questions before implementation started; here's
 what was actually decided/done, so this file reflects reality rather than
@@ -117,7 +117,7 @@ lingering as unresolved:
 - **Repo visibility:** left as the user's call to make when ready to link
   it from a resume; not decided as part of this work.
 
-## What was decided (Day 2 complete)
+## What was decided (Phase 2 complete)
 
 - **App registration mechanism:** legacy custom apps (created directly
   from a store's own Admin) are disabled for new creation as of January
@@ -150,5 +150,5 @@ lingering as unresolved:
   correctly across locations. Disclosed as a known limitation rather
   than fixed — see README.
 - **Full catalog registration:** all 17 sample products (28 rows,
-  including two synthetic test rows from Day 1) registered via a one-off
+  including two synthetic test rows from Phase 1) registered via a one-off
   manual script — not a built "sync" feature.

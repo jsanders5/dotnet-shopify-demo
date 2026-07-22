@@ -40,7 +40,7 @@ embedded_app_direct_api_access = true
 [access_scopes]
 # read_inventory: required by Shopify to back the inventory_levels/update
 # webhook subscription, even though the app never queries the Admin API
-# itself for normal operation. read_products: used only during Day 2
+# itself for normal operation. read_products: used only during Phase 2
 # manual verification, to look up a product variant's inventory_item_id
 # via GraphiQL for end-to-end testing — not needed by the app at runtime.
 scopes = "read_inventory,read_products,read_locations"

@@ -7,7 +7,7 @@ demo closing real .NET/Shopify skill gaps ahead of applying to a specific
 job posting — see `CLAUDE.md` for why this exists and what it does and
 doesn't claim, and `PLAN.md` for the full build plan.
 
-Both Day 1 (.NET backend) and Day 2 (Shopify storefront integration) are
+Both Phase 1 (.NET backend) and Phase 2 (Shopify storefront integration) are
 built and verified live end-to-end against a real Shopify development
 store. See "Honest caveats" below for what's simplified or not done.
 
@@ -35,7 +35,7 @@ store. See "Honest caveats" below for what's simplified or not done.
   verifier, and both lookup endpoints, run against EF Core's InMemory
   provider
 
-**Shopify storefront (Day 2)**
+**Shopify storefront (Phase 2)**
 - A real Shopify Partner account + development store (`inventory-sync-demo`)
 - A registered Shopify app (`shopify-app/`, config-only — no app code of
   its own) providing an **App Proxy** (`/apps/inventory/...` → the .NET
@@ -146,7 +146,7 @@ storefront lookup are intentionally two different, independent paths.
 Requires the .NET 8 SDK and a container runtime (Colima + `docker compose`
 on macOS). This project's SDK was installed via Microsoft's install
 script rather than a brew cask — see
-`docs/superpowers/plans/2026-07-22-day1-dotnet-backend.md` (Task 1) for
+`docs/superpowers/plans/2026-07-22-phase1-dotnet-backend.md` (Task 1) for
 the exact commands.
 
 ```bash
@@ -165,7 +165,7 @@ The API listens on `http://localhost:5072`. Swagger UI is at
 **Troubleshooting `dotnet ef`:** if it fails to resolve `libhostfxr.dylib`,
 it needs `DOTNET_ROOT` set, not just `PATH` (shown above).
 
-### Shopify storefront (Day 2)
+### Shopify storefront (Phase 2)
 
 Requires Node.js, the Shopify CLI (`npm install -g @shopify/cli
 @shopify/theme`), and `cloudflared` (`brew install cloudflared`).
@@ -219,7 +219,7 @@ kill %1
 Expected (and confirmed): the last call returns only the `"sku":"LOW"`
 product.
 
-## Verifying the storefront end-to-end (manual — the real Day 2 test)
+## Verifying the storefront end-to-end (manual — the real Phase 2 test)
 
 With the tunnel, API, and `shopify app deploy` all pointed at each other:
 1. Register a real store variant via `POST /api/products` (quantity above

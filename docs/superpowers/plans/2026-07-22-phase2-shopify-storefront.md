@@ -1,8 +1,8 @@
-# Day 2 — Shopify Storefront Integration Implementation Plan
+# Phase 2 — Shopify Storefront Integration Implementation Plan
 
 > **For agentic workers:** Tasks marked **[CODE]** use
 > superpowers:subagent-driven-development (dispatch a fresh implementer
-> subagent, review, repeat) exactly like Day 1. Tasks marked **[USER
+> subagent, review, repeat) exactly like Phase 1. Tasks marked **[USER
 > ACTION]** involve Shopify's own web UI (Partner Dashboard, store
 > admin) or an interactive CLI login tied to the user's account — these
 > cannot be dispatched to a subagent (no subagent can complete an OAuth
@@ -10,15 +10,15 @@
 > human, in this session, with the controller providing exact
 > instructions and verifying the result afterward. Tasks marked
 > **[INFRA]** are local tooling/process setup with no login involved —
-> the controller runs these directly via Bash, same as Day 1's
+> the controller runs these directly via Bash, same as Phase 1's
 > Colima/Docker setup.
 
-**Goal:** Wire the Day 1 .NET API to a real Shopify development store: a
+**Goal:** Wire the Phase 1 .NET API to a real Shopify development store: a
 Liquid "Low Stock Alert" badge on the product page, backed by a live
 App Proxy call, driven end-to-end by a real Shopify webhook.
 
 **Architecture:** See
-`docs/superpowers/specs/2026-07-22-day2-shopify-storefront-design.md`
+`docs/superpowers/specs/2026-07-22-phase2-shopify-storefront-design.md`
 for the full design and reasoning. Summary: Cloudflare Quick Tunnel
 exposes the local API; a Shopify custom app (Partner Dashboard) holds
 the App Proxy config and the real webhook subscription; a new .NET
@@ -28,7 +28,7 @@ JS fetch renders the badge.
 ## Global Constraints
 
 - Never overstate what's built (CLAUDE.md's hard rule, carried forward
-  from Day 1): the tunnel is a dev tunnel, not a deployment; the custom
+  from Phase 1): the tunnel is a dev tunnel, not a deployment; the custom
   app exists only for App Proxy/webhook config, not as a published app.
 - Real secrets (the app's client secret / webhook signing secret) are
   set via `dotnet user-secrets` directly by the human in their own
@@ -37,7 +37,7 @@ JS fetch renders the badge.
   from current knowledge of Shopify's App Proxy and webhook
   configuration screens, but Shopify's UI changes over time. If a step
   doesn't match what's actually on screen, adapt to what's there and
-  correct this plan doc afterward — same pattern Day 1 used repeatedly
+  correct this plan doc afterward — same pattern Phase 1 used repeatedly
   (dotnet-sdk cask, docker healthcheck, etc.).
 - App Proxy requests are NOT signature-verified by the .NET endpoint in
   this plan (Shopify signs proxied requests with a separate signature
@@ -60,16 +60,16 @@ JS fetch renders the badge.
 - Create: `tests/InventorySync.Api.Tests/LowStockStatusEndpointTests.cs`
 
 **Interfaces:**
-- Consumes: `AppDbContext`, `Product` (existing, from Day 1).
+- Consumes: `AppDbContext`, `Product` (existing, from Phase 1).
 - Produces: `GET /api/products/by-inventory-item/{inventoryItemId:long}`
   returning `LowStockStatus` (camelCase JSON, ASP.NET Core's default):
   `{ inventoryItemId, tracked, quantity, lowStockThreshold, isLowStock }`.
-  Day 2's Liquid/JS work (Task 6) depends on this exact shape and route.
+  Phase 2's Liquid/JS work (Task 6) depends on this exact shape and route.
   This task has no dependency on Shopify/tunnel/anything else — it can
   run standalone against the existing InMemory test setup.
 
 This task has no Shopify dependency at all — dispatch it exactly like a
-Day 1 task, independent of everything else in this plan.
+Phase 1 task, independent of everything else in this plan.
 
 - [x] **Step 1: Write the failing tests**
 
@@ -586,7 +586,7 @@ git commit -m "Add Low Stock Alert Liquid section, wired to the by-inventory-ite
   stock — order soon!" badge now appears.
 
 Record the actual result (pass/fail, and exact commands run) for the
-README — this is the Day 2 equivalent of Day 1's documented manual
+README — this is the Phase 2 equivalent of Phase 1's documented manual
 stored-procedure verification.
 
 ---
@@ -597,17 +597,17 @@ stored-procedure verification.
 - Modify: `README.md`
 - Modify: `PLAN.md`
 
-- [ ] **Step 1:** Update `README.md`: add a "Day 2" section describing
+- [ ] **Step 1:** Update `README.md`: add a "Phase 2" section describing
   what's built (App Proxy, real webhook, Liquid badge), the honest
   caveats (dev tunnel not a deployment; App Proxy calls not
   signature-verified, disclosed as a deliberate simplification since
   the endpoint is read-only; quick tunnel URLs are ephemeral so the
   live demo requires the tunnel/App Proxy config to be in sync), and
   the exact manual end-to-end verification steps/result from Task 7.
-- [ ] **Step 2:** Check off Day 2 items in `PLAN.md` that were actually
+- [ ] **Step 2:** Check off Phase 2 items in `PLAN.md` that were actually
   completed; leave anything not done unchecked.
 - [ ] **Step 3:** Commit:
   ```bash
   git add README.md PLAN.md
-  git commit -m "Document Day 2 Shopify storefront integration"
+  git commit -m "Document Phase 2 Shopify storefront integration"
   ```

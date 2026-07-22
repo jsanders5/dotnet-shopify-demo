@@ -1,4 +1,4 @@
-# Day 1 — .NET Backend Implementation Plan
+# Phase 1 — .NET Backend Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -23,8 +23,8 @@
   Windows/Linux SQL Server engine, even though the T-SQL/EF Core surface is
   the same.
 - No Shopify Partner store, no Liquid code, no live webhook wiring to a real
-  Shopify store — that is explicitly Day 2 scope per `PLAN.md`. This plan
-  only covers the Day 1 backend checklist.
+  Shopify store — that is explicitly Phase 2 scope per `PLAN.md`. This plan
+  only covers the Phase 1 backend checklist.
 - No claim of running under real IIS anywhere (code, comments, README,
   commit messages). Ship on Kestrel with `web.config` generated correctly
   for in-process hosting (per `CLAUDE.md` option 2), and say plainly that it
@@ -34,7 +34,7 @@
   the app's connection string) — never in `appsettings.json`.
 - Keep it tight: Products has exactly GET-all, GET-by-id, POST, and the
   low-stock report. No PUT/DELETE, no pagination, no auth — none of that is
-  in `PLAN.md`'s Day 1 scope and adding it would dilute a demo that's
+  in `PLAN.md`'s Phase 1 scope and adding it would dilute a demo that's
   supposed to be small and defensible.
 
 ---
@@ -1107,14 +1107,14 @@ git commit -m "Configure explicit in-process hosting model for IIS deployability
 - [ ] **Step 1: Write `README.md`**
 
 ```markdown
-# Shopify Inventory Sync & Storefront Alert — .NET backend (Day 1)
+# Shopify Inventory Sync & Storefront Alert — .NET backend (Phase 1)
 
 A small ASP.NET Core Web API that models Shopify inventory data and
 receives Shopify inventory-update webhooks. Built as a scoped, honest demo
 closing real .NET/Shopify skill gaps — see `CLAUDE.md` for why this exists
 and what it does and doesn't claim.
 
-## What's here (Day 1 scope only)
+## What's here (Phase 1 scope only)
 
 - ASP.NET Core 8 Web API, controller-based
 - EF Core Code-First models (`Product`, `InventoryLog`) against SQL Server
@@ -1128,7 +1128,7 @@ and what it does and doesn't claim.
   publish) — **not actually deployed to IIS**; this dev machine is macOS
   and IIS is Windows-only. See "Honest caveats" below.
 
-## Not here yet (Day 2 scope, see `PLAN.md`)
+## Not here yet (Phase 2 scope, see `PLAN.md`)
 
 - No Shopify Partner store, no Liquid theme code, no live webhook pointed
   at a real Shopify store yet. The webhook receiver is built and tested
@@ -1182,9 +1182,9 @@ kill %1
 Expected: the last call returns only the `"sku":"LOW"` product.
 ```
 
-- [ ] **Step 2: Check off the completed Day 1 items in `PLAN.md`**
+- [ ] **Step 2: Check off the completed Phase 1 items in `PLAN.md`**
 
-In `PLAN.md`, under `## Day 1 — .NET backend`, change each completed line
+In `PLAN.md`, under `## Phase 1 — .NET backend`, change each completed line
 from `- [ ]` to `- [x]` for every checklist item actually done (scaffold,
 SQL Server via Docker, EF Core models + migration, CRUD endpoints, stored
 procedure, webhook receiver, basic tests). Leave any not actually done
@@ -1192,7 +1192,7 @@ unchecked.
 
 Also resolve the `## Open questions before starting implementation`
 section: replace it with a short note recording the answers actually
-used (Azure SQL Edge via Colima; no Shopify Partner store yet — Day 2;
+used (Azure SQL Edge via Colima; no Shopify Partner store yet — Phase 2;
 repo visibility as decided with the user), so the plan file reflects
 reality rather than lingering as open questions.
 
@@ -1200,5 +1200,5 @@ reality rather than lingering as open questions.
 
 ```bash
 git add README.md PLAN.md
-git commit -m "Document Day 1 backend state honestly; check off completed PLAN.md items"
+git commit -m "Document Phase 1 backend state honestly; check off completed PLAN.md items"
 ```
