@@ -36,4 +36,12 @@ public class ProductsController : ControllerBase
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
+
+    [HttpGet("low-stock")]
+    public async Task<ActionResult<IEnumerable<Product>>> GetLowStock()
+    {
+        return await _db.Products
+            .FromSqlRaw("EXEC dbo.GetLowStockProducts")
+            .ToListAsync();
+    }
 }
