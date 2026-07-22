@@ -59,6 +59,20 @@ reload, correctly, in both directions (shows when low-stock, hides when
 not), and reacts correctly to switching between variants without a page
 reload.
 
+## Screenshots
+
+**Storefront badge, live on the real dev store** — same product, same
+theme, only the selected variant's tracked inventory differs:
+
+| Low stock (quantity at/below threshold) | Normal stock |
+|---|---|
+| ![Storefront showing the Low Stock Alert badge](docs/screenshots/storefront-low-stock.jpg) | ![Storefront with no badge shown](docs/screenshots/storefront-in-stock.jpg) |
+
+**Backend API surface (Swagger UI)** — Products CRUD, the low-stock
+report, both lookup endpoints, and the webhook receiver:
+
+![Swagger UI listing the API's endpoints](docs/screenshots/swagger-api.jpg)
+
 ## Why two lookup endpoints
 
 Shopify's real `inventory_levels/update` webhook payload carries
