@@ -64,4 +64,29 @@ public class ProductsController : ControllerBase
             LowStockThreshold: product.LowStockThreshold,
             IsLowStock: product.Quantity <= product.LowStockThreshold);
     }
+
+    // Shopify's storefront Liquid does not expose variant.inventory_item_id
+    // (confirmed live against a real theme/store), only variant.id — so the
+    // storefront badge looks products up by variant ID instead. The webhook
+    // receiver is unaffected: it still keys on ShopifyInventoryItemId, which
+    // is what Shopify's real inventory_levels/update payload actually carries.
+    [HttpGet("by-variant/{variantId:long}")]
+    public async Task<ActionResult<LowStockStatus>> GetByVariant(long variantId)
+    {
+        var product = await _db.Products.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ShopifyVariantId == variantId);
+
+        if (product is null)
+        {
+            return new LowStockStatus(0, Tracked: false, Quantity: null,
+                LowStockThreshold: null, IsLowStock: false);
+        }
+
+        return new LowStockStatus(
+            product.ShopifyInventoryItemId,
+            Tracked: true,
+            Quantity: product.Quantity,
+            LowStockThreshold: product.LowStockThreshold,
+            IsLowStock: product.Quantity <= product.LowStockThreshold);
+    }
 }
