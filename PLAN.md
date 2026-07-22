@@ -52,17 +52,32 @@ boxes.
 
 ## Day 2 — Shopify half + wiring
 
-- [ ] Free Shopify Partner account + development store (Dawn base theme)
-- [ ] Add a custom Liquid section/snippet (e.g. "Low Stock Alert" badge on
-      the product page) using Liquid tags/objects
-- [ ] Wire the storefront section to call the .NET API (via a small JS
-      fetch, ideally through a Shopify App Proxy so it's same-origin)
-- [ ] Configure a real Shopify webhook pointing at the .NET webhook endpoint
-- [ ] Test end-to-end: change inventory in Shopify admin → webhook fires →
+- [x] Free Shopify Partner account + development store (`inventory-sync-demo`
+      — default theme turned out to be a Horizon-based theme, not Dawn;
+      see "What was decided" below)
+- [x] Add a custom Liquid section/snippet ("Low Stock Alert" badge on the
+      product page), rendered as a `main-product` block right after
+      price, styled to match the theme's own native low-stock indicator
+- [x] Wire the storefront section to call the .NET API via a small JS
+      fetch through a Shopify App Proxy (same-origin)
+- [x] Configure a real Shopify webhook pointing at the .NET webhook endpoint
+- [x] Test end-to-end: change inventory in Shopify admin → webhook fires →
       .NET verifies + updates SQL Server → storefront badge reflects the
-      change
-- [ ] Polish: README, architecture diagram, screenshots/GIF, push to GitHub
-- [ ] Draft resume bullets from what was actually built (no more, no less)
+      change — confirmed live, in both directions, including switching
+      between variants without a page reload
+- [x] Polish: README updated for Day 2; screenshots taken during live
+      verification (not saved as repo assets — see note below)
+- [ ] Draft resume bullets from what was actually built — in progress,
+      being handled directly with the user rather than as a repo artifact
+- [ ] Push to GitHub — not yet done, repo visibility still the user's call
+      (see Day 1's note)
+- [ ] Architecture diagram — not built; the README's prose description
+      and the two plan docs stand in for one
+
+Note: no GIF/screenshot files were added to this repo. Verification
+screenshots were taken during the session and sent directly to the user,
+not committed — if a demo GIF is wanted for the resume/portfolio, that's
+still open.
 
 ## Known constraint: IIS
 
@@ -95,7 +110,45 @@ lingering as unresolved:
   Linux SQL Server image has no arm64 build, and this dev machine is
   Apple Silicon macOS. Wire-compatible T-SQL/EF Core surface, but a
   different product; see `README.md`'s caveats section.
-- **Shopify Partner account / development store:** not set up yet — this
-  is Day 2 scope, not started.
+- **Shopify Partner account / development store:** set up — a
+  Partner account and a development store, `inventory-sync-demo`, with
+  Shopify's "generate test data" option (real sample products, e.g. "The
+  Complete Snowboard" with 5 variants) and no feature previews enabled.
 - **Repo visibility:** left as the user's call to make when ready to link
-  it from a resume; not decided as part of Day 1 backend work.
+  it from a resume; not decided as part of this work.
+
+## What was decided (Day 2 complete)
+
+- **App registration mechanism:** legacy custom apps (created directly
+  from a store's own Admin) are disabled for new creation as of January
+  2026. Used Shopify's current path instead: Dev Dashboard → "Start with
+  Shopify CLI" → `npx @shopify/create-app@latest --template none`,
+  stripped down from its scaffolded demo "FAQ" app (embedded UI,
+  metaobjects, an MCP extension — all irrelevant) to just
+  `shopify-app/shopify.app.toml`: declarative App Proxy + webhook
+  subscription config, no app code of its own. Deployed via
+  `shopify app deploy --allow-updates`.
+- **Storefront reachability:** a Cloudflare Quick Tunnel (no account
+  signup required, unlike ngrok's free tier) rather than a real
+  deployment — see README's caveats.
+- **Liquid `inventory_item_id` gap:** Shopify's Liquid environment does
+  not expose `variant.inventory_item_id` at all (confirmed live). Added
+  a `ShopifyVariantId` field and a `by-variant` lookup endpoint instead;
+  the webhook receiver is unaffected and still keys on
+  `ShopifyInventoryItemId`, matching Shopify's real webhook payload.
+- **Badge placement and styling:** moved from a standalone section
+  (bottom of page) to a `main-product` block right after price, matching
+  the theme's own native low-stock indicator styling. Two real bugs
+  found and fixed during live verification: a missing script tag from
+  converting a section into a snippet, and this theme's
+  `.product__inventory` CSS unconditionally setting `display: flex`,
+  which silently defeated the `hidden` attribute regardless of selector
+  specificity.
+- **Multi-location inventory:** found live (the dev store's own
+  "Multi-location Snowboard" sample product genuinely has inventory
+  split across two locations) that this demo does not aggregate
+  correctly across locations. Disclosed as a known limitation rather
+  than fixed — see README.
+- **Full catalog registration:** all 17 sample products (28 rows,
+  including two synthetic test rows from Day 1) registered via a one-off
+  manual script — not a built "sync" feature.
