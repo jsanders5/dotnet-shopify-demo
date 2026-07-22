@@ -1,0 +1,61 @@
+using System.Text;
+using System.Text.Json;
+using InventorySync.Api.Data;
+using InventorySync.Api.Models;
+using InventorySync.Api.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace InventorySync.Api.Controllers;
+
+[ApiController]
+[Route("webhooks")]
+public class WebhooksController : ControllerBase
+{
+    private readonly AppDbContext _db;
+    private readonly IConfiguration _config;
+
+    public WebhooksController(AppDbContext db, IConfiguration config)
+    {
+        _db = db;
+        _config = config;
+    }
+
+    [HttpPost("inventory-update")]
+    public async Task<IActionResult> InventoryUpdate()
+    {
+        Request.EnableBuffering();
+        using var reader = new StreamReader(Request.Body, leaveOpen: true);
+        var rawBody = await reader.ReadToEndAsync();
+        Request.Body.Position = 0;
+
+        var secret = _config["Shopify:WebhookSecret"];
+        var hmacHeader = Request.Headers["X-Shopify-Hmac-Sha256"].ToString();
+
+        if (string.IsNullOrEmpty(secret) ||
+            !ShopifyHmacVerifier.IsValid(secret, Encoding.UTF8.GetBytes(rawBody), hmacHeader))
+        {
+            return Unauthorized();
+        }
+
+        var payload = JsonSerializer.Deserialize<InventoryUpdatePayload>(rawBody);
+        if (payload is null) return BadRequest();
+
+        var product = await _db.Products
+            .FirstOrDefaultAsync(p => p.ShopifyInventoryItemId == payload.InventoryItemId);
+        if (product is null) return NotFound();
+
+        var previousQuantity = product.Quantity;
+        product.Quantity = payload.Available;
+
+        _db.InventoryLogs.Add(new InventoryLog
+        {
+            ProductId = product.Id,
+            PreviousQuantity = previousQuantity,
+            NewQuantity = payload.Available
+        });
+
+        await _db.SaveChangesAsync();
+        return Ok();
+    }
+}
