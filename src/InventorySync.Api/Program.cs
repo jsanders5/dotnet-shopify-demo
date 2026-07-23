@@ -12,6 +12,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHttpClient<IVoyageEmbeddingClient, VoyageEmbeddingClient>();
+builder.Services.AddHttpClient<IClaudeAnswerClient, ClaudeAnswerClient>();
 
 var app = builder.Build();
 
