@@ -106,25 +106,35 @@ public class ProductsController : ControllerBase
             .FirstOrDefaultAsync(g => g.ShopifyProductId == shopifyProductId);
         if (guide is null || guide.Chunks.Count == 0) return NotFound();
 
-        var questionEmbedding = await _embeddingClient.EmbedAsync(request.Question);
+        try
+        {
+            var questionEmbedding = await _embeddingClient.EmbedAsync(request.Question);
 
-        var topChunks = guide.Chunks
-            .Select(c => new
-            {
-                c.Content,
-                Similarity = CosineSimilarity.Compute(
-                    questionEmbedding, JsonSerializer.Deserialize<float[]>(c.Embedding)!)
-            })
-            .OrderByDescending(x => x.Similarity)
-            .Take(3)
-            .Select(x => x.Content)
-            .ToList();
+            var topChunks = guide.Chunks
+                .Select(c => new
+                {
+                    c.Content,
+                    Similarity = CosineSimilarity.Compute(
+                        questionEmbedding, JsonSerializer.Deserialize<float[]>(c.Embedding)!)
+                })
+                .OrderByDescending(x => x.Similarity)
+                .Take(3)
+                .Select(x => x.Content)
+                .ToList();
 
-        var contextText = string.Join("\n\n", topChunks);
+            var contextText = string.Join("\n\n", topChunks);
 
-        var answerWithoutContext = await _answerClient.AskAsync(request.Question, null);
-        var answerWithContext = await _answerClient.AskAsync(request.Question, contextText);
+            var answerWithoutContext = await _answerClient.AskAsync(request.Question, null);
+            var answerWithContext = await _answerClient.AskAsync(request.Question, contextText);
 
-        return new AskResponse(request.Question, answerWithoutContext, answerWithContext, topChunks);
+            return new AskResponse(request.Question, answerWithoutContext, answerWithContext, topChunks);
+        }
+        catch (HttpRequestException ex)
+        {
+            // Voyage/Claude failure (bad key, rate limit, timeout). No retry
+            // logic - disclosed simplification - but the caller gets a clear
+            // error instead of an unhandled exception.
+            return StatusCode(502, new { error = "The Q&A service is temporarily unavailable. Please try again shortly.", detail = ex.Message });
+        }
     }
 }
