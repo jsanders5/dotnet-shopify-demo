@@ -1,7 +1,9 @@
 using InventorySync.Api.Data;
 using InventorySync.Api.Models;
+using InventorySync.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace InventorySync.Api.Controllers;
 
@@ -10,10 +12,14 @@ namespace InventorySync.Api.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IVoyageEmbeddingClient _embeddingClient;
+    private readonly IClaudeAnswerClient _answerClient;
 
-    public ProductsController(AppDbContext db)
+    public ProductsController(AppDbContext db, IVoyageEmbeddingClient embeddingClient, IClaudeAnswerClient answerClient)
     {
         _db = db;
+        _embeddingClient = embeddingClient;
+        _answerClient = answerClient;
     }
 
     [HttpGet]
@@ -88,5 +94,37 @@ public class ProductsController : ControllerBase
             Quantity: product.Quantity,
             LowStockThreshold: product.LowStockThreshold,
             IsLowStock: product.Quantity <= product.LowStockThreshold);
+    }
+
+    [HttpPost("{shopifyProductId:long}/ask")]
+    public async Task<ActionResult<AskResponse>> Ask(long shopifyProductId, AskRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Question)) return BadRequest();
+
+        var guide = await _db.ProductGuides
+            .Include(g => g.Chunks)
+            .FirstOrDefaultAsync(g => g.ShopifyProductId == shopifyProductId);
+        if (guide is null || guide.Chunks.Count == 0) return NotFound();
+
+        var questionEmbedding = await _embeddingClient.EmbedAsync(request.Question);
+
+        var topChunks = guide.Chunks
+            .Select(c => new
+            {
+                c.Content,
+                Similarity = CosineSimilarity.Compute(
+                    questionEmbedding, JsonSerializer.Deserialize<float[]>(c.Embedding)!)
+            })
+            .OrderByDescending(x => x.Similarity)
+            .Take(3)
+            .Select(x => x.Content)
+            .ToList();
+
+        var contextText = string.Join("\n\n", topChunks);
+
+        var answerWithoutContext = await _answerClient.AskAsync(request.Question, null);
+        var answerWithContext = await _answerClient.AskAsync(request.Question, contextText);
+
+        return new AskResponse(request.Question, answerWithoutContext, answerWithContext, topChunks);
     }
 }

@@ -1,4 +1,5 @@
 using InventorySync.Api.Data;
+using InventorySync.Api.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,16 @@ public class InMemoryApiFactory : WebApplicationFactory<Program>
             var dbName = $"TestDb-{Guid.NewGuid()}";
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(dbName));
+
+            var voyageDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IVoyageEmbeddingClient));
+            if (voyageDescriptor is not null) services.Remove(voyageDescriptor);
+            services.AddSingleton<IVoyageEmbeddingClient, FakeVoyageEmbeddingClient>();
+
+            var claudeDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IClaudeAnswerClient));
+            if (claudeDescriptor is not null) services.Remove(claudeDescriptor);
+            services.AddSingleton<IClaudeAnswerClient, FakeClaudeAnswerClient>();
         });
     }
 }
