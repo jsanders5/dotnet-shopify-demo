@@ -7,9 +7,10 @@ demo closing real .NET/Shopify skill gaps ahead of applying to a specific
 job posting — see `CLAUDE.md` for why this exists and what it does and
 doesn't claim, and `PLAN.md` for the full build plan.
 
-Both Phase 1 (.NET backend) and Phase 2 (Shopify storefront integration) are
-built and verified live end-to-end against a real Shopify development
-store. See "Honest caveats" below for what's simplified or not done.
+Phase 1 (.NET backend), Phase 2 (Shopify storefront integration), and
+Phase 3 (a bonus RAG "Ask about this product" feature) are all built and
+verified live end-to-end against a real Shopify development store. See
+"Honest caveats" below for what's simplified or not done.
 
 ## What's here
 
@@ -58,6 +59,78 @@ the SQL Server database → the storefront badge reflects the new state on
 reload, correctly, in both directions (shows when low-stock, hides when
 not), and reacts correctly to switching between variants without a page
 reload.
+
+**Shopify storefront (Phase 3 — bonus, RAG product Q&A)**
+- An "Ask about this product" box on each of the four headphone product
+  pages (`theme/snippets/ask-about-product.liquid`,
+  `theme/assets/ask-about-product.js`), reusing the same App Proxy from
+  Phase 2 — no new Shopify app configuration was needed
+- `POST /api/products/{shopifyProductId}/ask` — retrieval-augmented
+  generation over a small, original product-guide corpus:
+  1. The shopper's question is embedded with **Voyage AI**
+     (`voyage-3.5`) — chosen because Anthropic doesn't have its own
+     embeddings endpoint
+  2. The top 3 most similar guide chunks (in-memory cosine similarity,
+     no vector DB) are retrieved for that product
+  3. **Claude Haiku 4.5** answers the question twice — once with no
+     product context, once grounded in the retrieved chunks — and both
+     answers are returned side by side, along with the retrieved
+     passages
+- Guide content (`seed-data/product-guides.json`, 4 products x 5 chunks)
+  is **original writing based on real Skullcandy support-page facts**,
+  not scraped or copied text — sourced from Skullcandy's own public
+  support pages for facts only, then written fresh
+- New secrets: `Anthropic:ApiKey` and `VoyageAi:ApiKey`, set via
+  `dotnet user-secrets` — never committed
+
+**The ANC trap-question demo.** Two of the four products have active
+noise cancellation (Crusher 1080 ANC, Method 360 ANC); two don't
+(Crusher 720, Riff Wireless 2). Asking the same question, **"How do I
+turn on noise cancelling?"**, on a non-ANC and an ANC model shows RAG's
+value concretely. Actual transcripts, captured live against the real
+storefront:
+
+The "without context" call still tells Claude the product's name (that's
+known from the product page regardless of RAG) — it just withholds the
+actual product documentation. That isolates the real variable this demo
+is about: accurate grounding vs. none, not "does the model know which
+product this is."
+
+*Crusher 720 (no ANC):*
+- **Without context:** "To activate noise cancelling: 1. **Power on the
+  headphones**... 2. **Activate ANC** - Press the **ANC button**
+  (typically located on the side or ear cup of the headphones) 3.
+  **Confirm activation** - You should hear a confirmation tone... You can
+  cycle through different ANC modes (Full ANC, Ambient Mode, Off) by
+  pressing the button multiple times..." — a confident, plausible-
+  sounding set of steps for a feature this specific model doesn't have.
+- **With context (RAG):** "The Crusher 720 does not have active noise
+  cancellation (ANC). Instead, it offers a Stay-Aware mode that
+  amplifies ambient sound around you for situational awareness, rather
+  than blocking outside noise."
+
+*Crusher 1080 ANC (has ANC):*
+- **Without context:** "To activate noise cancelling: 1. **Power on the
+  headphones**... 2. **Activate ANC** - Press the **ANC button**
+  (typically located on the side or ear cup...) ... You can cycle through
+  different ANC modes (Full ANC, Ambient Mode, Off) by pressing the
+  button multiple times..." — plausible-sounding, and *this* model does
+  have ANC, but the button name, mode names, and mechanism are all
+  invented (this model uses a "custom button" and modes named
+  Quiet/Off/Aware, not an "ANC button" and Full ANC/Ambient Mode/Off).
+- **With context (RAG):** "To turn on noise cancelling on the Crusher
+  1080 ANC, use the custom button or the Skullcandy app to switch to
+  **Quiet mode**, which provides maximum active noise cancellation using
+  6 microphones. Note that ANC is off by default, so you'll need to turn
+  it on this way when you first use the headphones."
+
+This is the demo's clearest moment: on the *ANC* model, the ungrounded
+answer isn't wrong about whether the feature exists — it's wrong about
+the specific mechanism, in a way that sounds just as confident as the
+correct answer. That's a more dangerous failure mode for a support
+chatbot than the non-ANC case (a plausible-sounding wrong answer, not a
+"can't help" answer), and it's exactly what the retrieved documentation
+corrects.
 
 ## Screenshots
 
@@ -138,6 +211,27 @@ storefront lookup are intentionally two different, independent paths.
   transferred to a paid plan — this isn't something this project chose,
   it's a platform constraint. `shopify theme dev`/`theme editor` previews
   bypass it; a plain browser visit to the storefront needs the password.
+- **The RAG feature (Phase 3) is a small, deliberately-scoped demo, not
+  production-hardened.** Specifically:
+  - No vector database — in-memory cosine similarity over ~20 chunks
+    total, the right amount of engineering at this corpus size, not a
+    shortcut around real infrastructure at a larger one.
+  - No rate limiting or abuse protection on `/ask`, reachable through
+    the public tunnel while it's running. Every question triggers one
+    Voyage embedding call and two Claude calls — real latency (a few
+    seconds) and real dollar cost per question.
+  - No retry logic on Voyage/Claude failures — a failure returns a
+    clear `502` instead of retrying or silently swallowing the error
+    (see `ProductsController.Ask`).
+  - No chat history/multi-turn conversation, no streaming — one
+    question, one synchronous comparison response.
+  - No admin UI/CRUD for guide content — seeded once via a one-off
+    throwaway script (not committed), from the committed
+    `seed-data/product-guides.json`.
+  - Voyage AI's free tier (no payment method on file) caps at 3
+    requests/minute. The seeding script batches all of one product's
+    chunks into a single Voyage request (4 requests total for 4
+    products, not 20) specifically to stay under that limit.
 
 ## Running locally
 
@@ -183,6 +277,22 @@ npx shopify app deploy --allow-updates
 cd ../theme
 npx shopify theme dev --store <your-dev-store>.myshopify.com --store-password "<password>"
 ```
+
+### RAG product Q&A (Phase 3)
+
+Requires two additional secrets, set via `dotnet user-secrets` from
+`src/InventorySync.Api`:
+```bash
+dotnet user-secrets set "Anthropic:ApiKey" "<your key>"
+dotnet user-secrets set "VoyageAi:ApiKey" "<your key>"
+```
+Guide content (`seed-data/product-guides.json`) must be seeded into
+`ProductGuides`/`ProductGuideChunks` before `/ask` will return results —
+this repo doesn't ship a committed seeding tool, since it was a
+throwaway script; see `docs/superpowers/plans/2026-07-22-phase3-rag-product-qa.md`
+Task 7 for the exact approach (embed each product's chunks in one
+batched Voyage request, insert alongside the product's
+`ShopifyProductId`).
 
 ### Registering products
 

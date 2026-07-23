@@ -152,3 +152,57 @@ lingering as unresolved:
 - **Full catalog registration:** all 17 sample products (28 rows,
   including two synthetic test rows from Phase 1) registered via a one-off
   manual script — not a built "sync" feature.
+
+## Phase 3 — bonus: RAG product Q&A (complete)
+
+Not in the original 2-day scope — added afterward to demonstrate AI-tool
+proficiency using the same App Proxy infrastructure already built, rather
+than as a disconnected add-on. Design: `docs/superpowers/specs/2026-07-22-phase3-rag-product-qa-design.md`.
+Plan: `docs/superpowers/plans/2026-07-22-phase3-rag-product-qa.md`.
+
+- [x] Content model (`ProductGuide`/`ProductGuideChunk`) + migration
+- [x] Cosine similarity retrieval (pure C#, unit tested)
+- [x] Voyage AI embedding client (`voyage-3.5`) — Anthropic has no
+      embeddings endpoint of its own
+- [x] Claude Haiku 4.5 answer client, grounded vs. ungrounded prompts
+- [x] `POST /api/products/{id}/ask` endpoint, tested against EF InMemory
+      + fake clients
+- [x] Anthropic + Voyage API keys set via `dotnet user-secrets`
+- [x] Guide content (4 products x 5 chunks, original writing based on
+      real Skullcandy support-page facts) seeded via a throwaway script,
+      not committed — only the content JSON is
+- [x] Storefront "Ask about this product" box, reusing the Phase 2 App
+      Proxy, pushed live and verified against the real dev store
+- [x] ANC trap-question demo, run live against two real products —
+      transcripts recorded verbatim in README
+- [x] README + this file documented
+
+**What was decided (Phase 3):**
+- **Voyage AI free-tier rate limit (3 requests/minute without a payment
+  method):** the seeding script originally sent one embedding request
+  per chunk (20 requests for 20 chunks) and hit the limit partway
+  through, leaving partial data. Fixed by batching each product's 5
+  chunks into a single Voyage request (4 requests total) plus
+  idempotent cleanup and retry/backoff — found and fixed live during
+  seeding, not anticipated in the design.
+- **No error handling around external API calls, found live:** the
+  original `/ask` implementation had no try/catch around the
+  Voyage/Claude HTTP calls, so a live 429 during manual testing
+  surfaced as a raw unhandled exception rather than a controlled
+  response. Fixed to return a `502` with a clear message on failure —
+  still no retry logic, which stays a disclosed simplification.
+- **Ungrounded prompt includes the product name:** the initial
+  implementation sent the *bare* question with zero product
+  identification to the "without context" call, which just tested
+  whether the model could guess the product rather than whether it had
+  accurate documentation. Fixed to include the product name (known from
+  any real product page, RAG or not) so the comparison isolates the
+  actual variable — documentation vs. none.
+- **ANC trap-question demo, actual vs. predicted:** the design doc
+  predicted the ungrounded answer would confidently hallucinate
+  ANC steps. Confirmed true once the prompt included the product name
+  (see above) — without it, Claude Haiku asked a clarifying question
+  instead of guessing, which was a weaker, less honest demo. The final
+  recorded transcripts (see README) show the predicted failure mode:
+  confident, plausible-sounding, and factually wrong steps (invented
+  button/mode names) on both the ANC and non-ANC models.

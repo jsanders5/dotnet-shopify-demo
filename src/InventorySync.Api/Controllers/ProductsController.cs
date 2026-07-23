@@ -124,7 +124,13 @@ public class ProductsController : ControllerBase
 
             var contextText = string.Join("\n\n", topChunks);
 
-            var answerWithoutContext = await _answerClient.AskAsync(request.Question, null);
+            // The ungrounded call still gets the product name - that's known
+            // from the product page regardless of RAG, and omitting it would
+            // test "does the model know which product this is" rather than
+            // the actual comparison this endpoint is for: accurate product
+            // documentation vs. none.
+            var namedQuestion = $"Product: {guide.Title}\n\nQuestion: {request.Question}";
+            var answerWithoutContext = await _answerClient.AskAsync(namedQuestion, null);
             var answerWithContext = await _answerClient.AskAsync(request.Question, contextText);
 
             return new AskResponse(request.Question, answerWithoutContext, answerWithContext, topChunks);
