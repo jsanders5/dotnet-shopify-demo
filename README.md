@@ -97,40 +97,58 @@ is about: accurate grounding vs. none, not "does the model know which
 product this is."
 
 *Crusher 720 (no ANC):*
-- **Without context:** "To activate noise cancelling: 1. **Power on the
-  headphones**... 2. **Activate ANC** - Press the **ANC button**
-  (typically located on the side or ear cup of the headphones) 3.
-  **Confirm activation** - You should hear a confirmation tone... You can
-  cycle through different ANC modes (Full ANC, Ambient Mode, Off) by
-  pressing the button multiple times..." — a confident, plausible-
-  sounding set of steps for a feature this specific model doesn't have.
+- **Without context:** "The Crusher 720 doesn't have traditional active
+  noise cancellation (ANC). However, it does have **Haptic Bass**
+  features... **Passive noise isolation** - the ear cups naturally block
+  external sound... **Crusher Haptic Bass** - a vibration feature you can
+  control via the Skullcandy app or physical buttons... Use the **button
+  on the left ear cup** to cycle through settings..." — gets the
+  top-line fact right (no ANC), but invents specifics: there's no "left
+  ear cup button" and no feature actually called "Crusher Haptic Bass."
 - **With context (RAG):** "The Crusher 720 does not have active noise
-  cancellation (ANC). Instead, it offers a Stay-Aware mode that
-  amplifies ambient sound around you for situational awareness, rather
-  than blocking outside noise."
+  cancellation (ANC). Instead of noise cancelling, it has a Stay-Aware
+  mode that amplifies ambient sound around you for situational
+  awareness rather than blocking outside noise."
 
 *Crusher 1080 ANC (has ANC):*
-- **Without context:** "To activate noise cancelling: 1. **Power on the
-  headphones**... 2. **Activate ANC** - Press the **ANC button**
-  (typically located on the side or ear cup...) ... You can cycle through
-  different ANC modes (Full ANC, Ambient Mode, Off) by pressing the
-  button multiple times..." — plausible-sounding, and *this* model does
-  have ANC, but the button name, mode names, and mechanism are all
-  invented (this model uses a "custom button" and modes named
-  Quiet/Off/Aware, not an "ANC button" and Full ANC/Ambient Mode/Off).
-- **With context (RAG):** "To turn on noise cancelling on the Crusher
-  1080 ANC, use the custom button or the Skullcandy app to switch to
-  **Quiet mode**, which provides maximum active noise cancellation using
-  6 microphones. Note that ANC is off by default, so you'll need to turn
-  it on this way when you first use the headphones."
+- **Without context:** "To enable noise cancellation: 1. **Power on the
+  headphones**... 2. **Locate the ANC button** - Look for a dedicated
+  button (usually on the ear cup or control panel) 3. **Press the ANC
+  button** - Toggle it to activate noise cancelling mode... You can also
+  control ANC through the **Skullcandy app**..." — plausible-sounding,
+  and *this* model does have ANC, but the button name and mechanism are
+  invented: this model's real control is a "custom button" pressed
+  **up** for Quiet mode / **down** for Off / **down again** for Aware,
+  not a dedicated "ANC button" you "toggle."
+- **With context (RAG):** "To turn on noise cancelling, press the
+  custom button **up** to enable Quiet mode, which activates maximum
+  active noise cancellation."
 
 This is the demo's clearest moment: on the *ANC* model, the ungrounded
 answer isn't wrong about whether the feature exists — it's wrong about
 the specific mechanism, in a way that sounds just as confident as the
 correct answer. That's a more dangerous failure mode for a support
-chatbot than the non-ANC case (a plausible-sounding wrong answer, not a
-"can't help" answer), and it's exactly what the retrieved documentation
-corrects.
+chatbot than the non-ANC case (a plausible-sounding wrong answer on a
+detail, not a "can't help" answer), and it's exactly what the retrieved
+documentation corrects. Notice also that the ungrounded model isn't
+uniformly wrong — on the Crusher 720 it got the *headline* fact right
+(no ANC) while still inventing unconfirmed specifics. That inconsistency
+is itself part of the case for grounding: you can't tell which parts of
+an ungrounded answer to trust.
+
+**A content-accuracy correction, disclosed.** The seed content was
+originally written from a first pass at Skullcandy's public support
+pages and got the Crusher 1080 ANC's actual control mechanism wrong (it
+described the custom button as "cycling" through modes with one press,
+rather than the real up/press-down/press-down-again mechanic, and
+omitted that the ANC system is built on Bose QuietControl technology).
+Caught by re-checking the seed content directly against Skullcandy's
+own support pages after noticing the RAG-grounded answer didn't match
+a real FAQ excerpt, fixed in `seed-data/product-guides.json`, and the
+transcripts above are from the corrected, re-verified content. Documented
+here rather than silently corrected, consistent with this project's
+rule against overstating what's built — including the accuracy of its
+own source data.
 
 ## Screenshots
 
@@ -232,6 +250,12 @@ storefront lookup are intentionally two different, independent paths.
     requests/minute. The seeding script batches all of one product's
     chunks into a single Voyage request (4 requests total for 4
     products, not 20) specifically to stay under that limit.
+  - No prompt-injection defense. The shopper's question is interpolated
+    directly into the Claude prompt; a crafted question could try to
+    steer the model off-topic. Blast radius is limited to a single odd
+    answer (no tools, no data access from that answer), but it's not
+    filtered or sanitized, and a production version would need to
+    address this.
 
 ## Running locally
 
