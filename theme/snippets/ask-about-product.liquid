@@ -1,0 +1,30 @@
+{% comment %}
+  Rendered as a block inside sections/main-product.liquid, same pattern
+  as low-stock-alert. Posts through the existing App Proxy
+  (/apps/inventory/... -> the .NET API) to the RAG endpoint added in
+  Phase 3. product.id is the Shopify Product ID (not variant), which
+  is what ProductGuide.ShopifyProductId is keyed on.
+{% endcomment %}
+<div class="product-ask" data-product-ask data-product-id="{{ product.id }}">
+  <label for="ProductAskInput-{{ section.id }}">Ask about this product</label>
+  <input type="text" id="ProductAskInput-{{ section.id }}" data-product-ask-input
+    placeholder="e.g. Does this have noise cancelling?" />
+  <button type="button" data-product-ask-submit>Ask</button>
+
+  <div data-product-ask-results hidden>
+    <div class="product-ask__panel">
+      <h4>Without product context</h4>
+      <p data-product-ask-answer-without></p>
+    </div>
+    <div class="product-ask__panel">
+      <h4>With product context (RAG)</h4>
+      <p data-product-ask-answer-with></p>
+      <details>
+        <summary>Retrieved source passages</summary>
+        <ul data-product-ask-chunks></ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+{{ 'ask-about-product.js' | asset_url | script_tag }}
