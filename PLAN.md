@@ -65,19 +65,19 @@ boxes.
       .NET verifies + updates SQL Server → storefront badge reflects the
       change — confirmed live, in both directions, including switching
       between variants without a page reload
-- [x] Polish: README updated for Phase 2; screenshots taken during live
-      verification (not saved as repo assets — see note below)
+- [x] Polish: README updated for Phase 2; screenshots committed to
+      `docs/screenshots/` and embedded in the README's Screenshots section
+- [x] Push to GitHub — repo is public:
+      `github.com/jsanders5/dotnet-shopify-demo`, full git-history secret
+      scan done first
 - [ ] Draft resume bullets from what was actually built — in progress,
       being handled directly with the user rather than as a repo artifact
-- [ ] Push to GitHub — not yet done, repo visibility still the user's call
-      (see Phase 1's note)
 - [ ] Architecture diagram — not built; the README's prose description
       and the two plan docs stand in for one
 
-Note: no GIF/screenshot files were added to this repo. Verification
-screenshots were taken during the session and sent directly to the user,
-not committed — if a demo GIF is wanted for the resume/portfolio, that's
-still open.
+Note: no demo GIF was added to this repo — if one is wanted for the
+resume/portfolio, that's still open. Static screenshots are committed
+(see above).
 
 ## Known constraint: IIS
 
@@ -114,8 +114,9 @@ lingering as unresolved:
   Partner account and a development store, `inventory-sync-demo`, with
   Shopify's "generate test data" option (real sample products, e.g. "The
   Complete Snowboard" with 5 variants) and no feature previews enabled.
-- **Repo visibility:** left as the user's call to make when ready to link
-  it from a resume; not decided as part of this work.
+- **Repo visibility:** decided and done — public, at
+  `github.com/jsanders5/dotnet-shopify-demo`, so it can be linked from
+  the resume.
 
 ## What was decided (Phase 2 complete)
 
