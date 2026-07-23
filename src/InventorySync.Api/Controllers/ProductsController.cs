@@ -14,12 +14,14 @@ public class ProductsController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IVoyageEmbeddingClient _embeddingClient;
     private readonly IClaudeAnswerClient _answerClient;
+    private readonly ILogger<ProductsController> _logger;
 
-    public ProductsController(AppDbContext db, IVoyageEmbeddingClient embeddingClient, IClaudeAnswerClient answerClient)
+    public ProductsController(AppDbContext db, IVoyageEmbeddingClient embeddingClient, IClaudeAnswerClient answerClient, ILogger<ProductsController> logger)
     {
         _db = db;
         _embeddingClient = embeddingClient;
         _answerClient = answerClient;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -135,12 +137,16 @@ public class ProductsController : ControllerBase
 
             return new AskResponse(request.Question, answerWithoutContext, answerWithContext, topChunks);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
-            // Voyage/Claude failure (bad key, rate limit, timeout). No retry
-            // logic - disclosed simplification - but the caller gets a clear
-            // error instead of an unhandled exception.
-            return StatusCode(502, new { error = "The Q&A service is temporarily unavailable. Please try again shortly.", detail = ex.Message });
+            // Voyage/Claude failure (bad key, rate limit, timeout) or a
+            // malformed response body. No retry logic - disclosed
+            // simplification - but the caller gets a clear error instead of
+            // an unhandled exception. The exception detail is logged, not
+            // returned - it can carry internal endpoint/wiring details and
+            // this endpoint is reachable through the public tunnel.
+            _logger.LogError(ex, "Ask failed for product {ShopifyProductId}", shopifyProductId);
+            return StatusCode(502, new { error = "The Q&A service is temporarily unavailable. Please try again shortly." });
         }
     }
 }
