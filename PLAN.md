@@ -206,3 +206,29 @@ Plan: `docs/superpowers/plans/2026-07-22-phase3-rag-product-qa.md`.
   recorded transcripts (see README) show the predicted failure mode:
   confident, plausible-sounding, and factually wrong steps (invented
   button/mode names) on both the ANC and non-ANC models.
+- **A real factual error in the seed content itself, caught by the
+  user reviewing the RAG-grounded answer against a real Skullcandy
+  FAQ:** the Crusher 1080 ANC's "original writing based on real facts"
+  guide content had the ANC control mechanism wrong (described it as
+  cycling through modes via one button, rather than the real up/down
+  press sequence) and omitted the Bose QuietControl branding. This
+  meant the "grounded" answer, while consistent with the seed content,
+  wasn't actually correct about the real product. Re-verified all four
+  products' seed content directly against Skullcandy's own support
+  pages, fixed the Crusher 1080 ANC chunks, removed one other
+  unverified claim (Google Fast Pair on the Crusher 720), and
+  re-embedded/re-seeded. A reminder that "original writing based on
+  real facts" needs the same fact-checking rigor as any other claim
+  this project makes — the RAG demo's credibility depends on the
+  underlying content being actually correct, not just non-plagiarized.
+- **Final whole-branch review (dispatched to a more capable model)**
+  found one Important issue: the `/ask` error handling added above only
+  caught `HttpRequestException`, but `HttpClient` timeouts surface as
+  `TaskCanceledException` — so a slow external-API response still
+  produced an unhandled exception, the exact failure the fix was meant
+  to close. Broadened the catch to include `TaskCanceledException` and
+  `JsonException` (malformed response body), and stopped returning the
+  raw exception message in the public `502` response (logged
+  server-side instead, since the endpoint is reachable through the
+  public tunnel). Also added a prompt-injection disclosure to the
+  README per a Minor finding from the same review.
