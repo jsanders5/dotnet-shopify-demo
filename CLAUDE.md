@@ -63,7 +63,8 @@ Default to option 2 unless Azure access is confirmed available.
 ## Architecture (see PLAN.md for the day-by-day build order)
 
 - **ASP.NET Core Web API** — Products/InventoryLog endpoints, DI, middleware
-- **EF Core + SQL Server** (Docker container or LocalDB) — Code-First models,
+- **EF Core + SQL Server** (Azure SQL Edge via Colima, not a real SQL
+  Server container or LocalDB — see "Decided" below) — Code-First models,
   a migration, and at least one raw stored procedure (e.g.
   `GetLowStockProducts` via `FromSqlRaw`) — this explicitly demonstrates
   stored-procedure experience, which the job posting calls out by name
@@ -71,15 +72,28 @@ Default to option 2 unless Azure access is confirmed available.
   persisting inventory updates to SQL Server
 - **Shopify theme customization** — a Liquid section/snippet on a free
   Shopify Partner development store's product page (e.g. a "low stock"
-  badge), calling the .NET API live, ideally via a Shopify App Proxy so the
+  badge), calling the .NET API live via a Shopify App Proxy so the
   storefront call is same-origin
+- **Bonus, Phase 3 — RAG product Q&A** — not in the original 2-day scope;
+  added afterward to demonstrate AI-tool proficiency on top of the same
+  App Proxy infrastructure. See `PLAN.md`'s Phase 3 section and
+  `docs/superpowers/specs/2026-07-22-phase3-rag-product-qa-design.md`.
 
-## Open questions (resolve before/while building)
+## Decided (was "Open questions")
 
-- Shopify Partner account: needs signup (free) if not already set up
-- SQL Server: Docker container vs. LocalDB
-- Whether Azure access exists (changes the IIS approach)
-- Repo visibility (public, so it can be linked from the resume)
+All resolved during the build; see `PLAN.md`'s "What was decided" sections
+for the full reasoning behind each.
+
+- Shopify Partner account: signed up — a development store,
+  `inventory-sync-demo`, with Shopify's own generated test-data catalog.
+- SQL Server: neither Docker-SQL-Server nor LocalDB — Azure SQL Edge via
+  Colima (Apple Silicon has no arm64 SQL Server image). Wire-compatible
+  but a different product; see README's caveats.
+- Azure access: not used — no live IIS deployment. Kestrel + a correctly
+  configured `web.config`/in-process hosting model instead, per option 2
+  above, disclosed plainly as never having actually run under IIS.
+- Repo visibility: public —
+  [`github.com/jsanders5/dotnet-shopify-demo`](https://github.com/jsanders5/dotnet-shopify-demo).
 
 ## Related files
 
