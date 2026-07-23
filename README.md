@@ -63,8 +63,13 @@ reload.
 **Shopify storefront (Phase 3 — bonus, RAG product Q&A)**
 - An "Ask about this product" box on each of the four headphone product
   pages (`theme/snippets/ask-about-product.liquid`,
-  `theme/assets/ask-about-product.js`), reusing the same App Proxy from
-  Phase 2 — no new Shopify app configuration was needed
+  `theme/assets/ask-about-product.js`, `theme/assets/product-ask.css`),
+  reusing the same App Proxy from Phase 2 — no new Shopify app
+  configuration was needed. Styled with this theme's own design
+  tokens and components — the floating-label `.field` input, `.button`,
+  the native `.accordion`/loading-spinner markup — rather than unstyled
+  HTML, so it reads as a native part of the theme, the same approach
+  the Phase 2 low-stock badge used.
 - `POST /api/products/{shopifyProductId}/ask` — retrieval-augmented
   generation over a small, original product-guide corpus:
   1. The shopper's question is embedded with **Voyage AI**
@@ -163,6 +168,13 @@ theme, only the selected variant's tracked inventory differs:
 report, both lookup endpoints, and the webhook receiver:
 
 ![Swagger UI listing the API's endpoints](docs/screenshots/swagger-api.jpg)
+
+**"Ask about this product" (Phase 3 RAG feature), live on the real dev
+store** — styled with this theme's own components (`.field`, `.button`,
+`.accordion`) rather than unstyled HTML, so it reads as a native part of
+the storefront:
+
+![The Ask about this product box showing a grounded vs. ungrounded answer comparison](docs/screenshots/product-ask.jpg)
 
 ## Why two lookup endpoints
 

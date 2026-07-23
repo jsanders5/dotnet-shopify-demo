@@ -1,0 +1,120 @@
+/* Ask about this product (Phase 3 RAG feature).
+   Built from this theme's own tokens (--color-*, --inputs-*, .field,
+   .button, .accordion) so it reads as a native block, the same approach
+   low-stock-alert.liquid used for the inventory badge. */
+
+.product-ask {
+  border: 0.1rem solid rgba(var(--color-foreground), 0.08);
+  border-radius: calc(var(--inputs-radius-outset, 0px) + 0.4rem);
+  padding: 2rem;
+}
+
+.product-ask__heading {
+  margin: 0 0 0.5rem;
+}
+
+.product-ask__hint {
+  margin: 0 0 1.8rem;
+  color: rgba(var(--color-foreground), 0.7);
+}
+
+.product-ask__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.2rem;
+}
+
+.product-ask__form .field {
+  flex: 1 1 24rem;
+  margin: 0;
+}
+
+.product-ask__submit {
+  flex-shrink: 0;
+  min-width: 10rem;
+}
+
+.product-ask__error {
+  color: rgb(var(--color-foreground));
+  margin: 1.2rem 0 0;
+}
+
+/* .form__message sets display:flex unconditionally, which otherwise
+   overrides the [hidden] attribute's default display:none - the same
+   gotcha already documented in low-stock-alert.liquid. */
+.product-ask__error[hidden] {
+  display: none;
+}
+
+.product-ask__results {
+  margin-top: 2.2rem;
+}
+
+.product-ask__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.2rem;
+}
+
+@media screen and (min-width: 750px) {
+  .product-ask__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.product-ask__panel {
+  padding: 1.6rem;
+  border-radius: calc(var(--inputs-radius-outset, 0px) + 0.4rem);
+  background-color: rgba(var(--color-foreground), 0.03);
+  border: 0.1rem solid rgba(var(--color-foreground), 0.06);
+}
+
+.product-ask__panel--grounded {
+  background-color: rgba(var(--color-base-accent-1), 0.06);
+  border-color: rgba(var(--color-base-accent-1), 0.3);
+}
+
+.product-ask__panel-label {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 1rem;
+  color: rgba(var(--color-foreground), 0.75);
+}
+
+.product-ask__dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: rgba(var(--color-foreground), 0.35);
+}
+
+.product-ask__panel--grounded .product-ask__dot {
+  background-color: rgb(var(--color-base-accent-1));
+}
+
+.product-ask__answer {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.product-ask__accordion.accordion {
+  margin-top: 1.8rem;
+  margin-bottom: 0;
+}
+
+.product-ask__accordion .accordion__title {
+  font-size: 1.3rem;
+  max-width: none;
+}
+
+.product-ask__chunks {
+  margin: 0;
+  padding-left: 1.8rem;
+}
+
+.product-ask__chunks li + li {
+  margin-top: 0.8rem;
+}

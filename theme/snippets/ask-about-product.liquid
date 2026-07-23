@@ -4,27 +4,84 @@
   (/apps/inventory/... -> the .NET API) to the RAG endpoint added in
   Phase 3. product.id is the Shopify Product ID (not variant), which
   is what ProductGuide.ShopifyProductId is keyed on.
+
+  Markup reuses this theme's own components (.field/.field__input for
+  the text input, .button for submit, .accordion for the collapsible
+  source passages, and the same loading-overlay__spinner markup the
+  Add to Cart button uses) so this reads as a native part of the theme
+  rather than unstyled HTML.
 {% endcomment %}
 <div class="product-ask" data-product-ask data-product-id="{{ product.id }}">
-  <label for="ProductAskInput-{{ section.id }}">Ask about this product</label>
-  <input type="text" id="ProductAskInput-{{ section.id }}" data-product-ask-input
-    placeholder="e.g. Does this have noise cancelling?" />
-  <button type="button" data-product-ask-submit>Ask</button>
+  <h3 class="product-ask__heading h4">Ask about this product</h3>
+  <p class="product-ask__hint caption-with-letter-spacing">
+    Compare an AI answer with and without this product's real documentation.
+  </p>
 
-  <div data-product-ask-results hidden>
-    <div class="product-ask__panel">
-      <h4>Without product context</h4>
-      <p data-product-ask-answer-without></p>
+  <div class="product-ask__form">
+    <div class="field">
+      <input
+        type="text"
+        class="field__input"
+        id="ProductAskInput-{{ section.id }}"
+        placeholder="e.g. Does this have noise cancelling?"
+        data-product-ask-input
+      >
+      <label class="field__label" for="ProductAskInput-{{ section.id }}">Your question</label>
     </div>
-    <div class="product-ask__panel">
-      <h4>With product context (RAG)</h4>
-      <p data-product-ask-answer-with></p>
+    <button type="button" class="product-ask__submit button button--secondary" data-product-ask-submit>
+      <span>Ask</span>
+      <div class="loading-overlay__spinner hidden" data-product-ask-spinner>
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          class="spinner"
+          viewBox="0 0 66 66"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle class="path" fill="none" stroke-width="6" cx="33" cy="33" r="30"></circle>
+        </svg>
+      </div>
+    </button>
+  </div>
+
+  <p class="product-ask__error form__message" data-product-ask-error hidden>
+    {% render 'icon-error' %}
+    <span data-product-ask-error-text></span>
+  </p>
+
+  <div class="product-ask__results" data-product-ask-results hidden>
+    <div class="product-ask__grid">
+      <div class="product-ask__panel">
+        <p class="product-ask__panel-label caption-with-letter-spacing">
+          <span class="product-ask__dot" aria-hidden="true"></span>
+          Without product info
+        </p>
+        <p class="product-ask__answer" data-product-ask-answer-without></p>
+      </div>
+      <div class="product-ask__panel product-ask__panel--grounded">
+        <p class="product-ask__panel-label caption-with-letter-spacing">
+          <span class="product-ask__dot" aria-hidden="true"></span>
+          Grounded in product docs
+        </p>
+        <p class="product-ask__answer" data-product-ask-answer-with></p>
+      </div>
+    </div>
+
+    <div class="product-ask__accordion accordion">
       <details>
-        <summary>Retrieved source passages</summary>
-        <ul data-product-ask-chunks></ul>
+        <summary>
+          <div class="summary__title">
+            <h4 class="accordion__title">Retrieved source passages</h4>
+          </div>
+          {% render 'icon-caret' %}
+        </summary>
+        <div class="accordion__content">
+          <ul class="product-ask__chunks" data-product-ask-chunks></ul>
+        </div>
       </details>
     </div>
   </div>
 </div>
 
+{{ 'product-ask.css' | asset_url | stylesheet_tag }}
 {{ 'ask-about-product.js' | asset_url | script_tag }}

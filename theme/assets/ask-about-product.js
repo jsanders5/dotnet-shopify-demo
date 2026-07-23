@@ -3,17 +3,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const productId = container.dataset.productId;
     const input = container.querySelector('[data-product-ask-input]');
     const button = container.querySelector('[data-product-ask-submit]');
+    const spinner = container.querySelector('[data-product-ask-spinner]');
     const results = container.querySelector('[data-product-ask-results]');
+    const errorEl = container.querySelector('[data-product-ask-error]');
+    const errorText = container.querySelector('[data-product-ask-error-text]');
     const withoutEl = container.querySelector('[data-product-ask-answer-without]');
     const withEl = container.querySelector('[data-product-ask-answer-with]');
     const chunksEl = container.querySelector('[data-product-ask-chunks]');
+
+    const setLoading = (isLoading) => {
+      button.disabled = isLoading;
+      button.classList.toggle('loading', isLoading);
+      spinner.classList.toggle('hidden', !isLoading);
+    };
+
+    const showError = (message) => {
+      results.hidden = true;
+      errorText.textContent = message;
+      errorEl.hidden = false;
+    };
 
     button.addEventListener('click', async () => {
       const question = input.value.trim();
       if (!question) return;
 
-      button.disabled = true;
-      button.textContent = 'Asking...';
+      errorEl.hidden = true;
+      setLoading(true);
 
       try {
         const response = await fetch(`/apps/inventory/products/${productId}/ask`, {
@@ -23,9 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (!response.ok) {
-          withoutEl.textContent = 'Something went wrong asking that question.';
-          withEl.textContent = '';
-          results.hidden = false;
+          showError('Something went wrong asking that question. Please try again.');
           return;
         }
 
@@ -41,9 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
         results.hidden = false;
       } catch (error) {
         console.error('Product ask failed:', error);
+        showError('Something went wrong asking that question. Please check your connection and try again.');
       } finally {
-        button.disabled = false;
-        button.textContent = 'Ask';
+        setLoading(false);
       }
     });
   });
