@@ -9,11 +9,17 @@ public class AppDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<InventoryLog> InventoryLogs => Set<InventoryLog>();
+    public DbSet<ProductGuide> ProductGuides => Set<ProductGuide>();
+    public DbSet<ProductGuideChunk> ProductGuideChunks => Set<ProductGuideChunk>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Product>()
             .HasIndex(p => p.ShopifyInventoryItemId)
+            .IsUnique();
+
+        modelBuilder.Entity<ProductGuide>()
+            .HasIndex(g => g.ShopifyProductId)
             .IsUnique();
     }
 }
